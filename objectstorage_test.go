@@ -444,3 +444,82 @@ func TestParseHeaderInt64(t *testing.T) {
 		t.Errorf("missing = %d, want 0", missing)
 	}
 }
+
+// ============================================================
+// DisableWebPublishing
+// ============================================================
+
+func TestDisableWebPublishing_Success(t *testing.T) {
+	var capturedHeader string
+	var headerPresent bool
+	server, client := setupTestServer(func(w http.ResponseWriter, r *http.Request) {
+		capturedHeader = r.Header.Get("X-Container-Read")
+		_, headerPresent = r.Header["X-Container-Read"]
+		w.WriteHeader(204)
+	})
+	defer server.Close()
+
+	err := client.DisableWebPublishing(context.Background(), "mycontainer")
+	assertNoError(t, err)
+
+	if !headerPresent {
+		t.Error("X-Container-Read header should be present")
+	}
+	if capturedHeader != "" {
+		t.Errorf("X-Container-Read = %q, want empty", capturedHeader)
+	}
+}
+
+// ============================================================
+// CreateDLOManifest
+// ============================================================
+
+func TestCreateDLOManifest_Success(t *testing.T) {
+	var capturedMethod string
+	var capturedManifestHeader string
+	server, client := setupTestServer(func(w http.ResponseWriter, r *http.Request) {
+		capturedMethod = r.Method
+		capturedManifestHeader = r.Header.Get("X-Object-Manifest")
+		w.WriteHeader(201)
+	})
+	defer server.Close()
+
+	err := client.CreateDLOManifest(context.Background(), "container", "manifest.dat", "segments", "prefix_")
+	assertNoError(t, err)
+
+	if capturedMethod != http.MethodPut {
+		t.Errorf("Method = %q, want PUT", capturedMethod)
+	}
+	if capturedManifestHeader != "segments/prefix_" {
+		t.Errorf("X-Object-Manifest = %q", capturedManifestHeader)
+	}
+}
+
+// ============================================================
+// CreateSLOManifest
+// ============================================================
+
+func TestCreateSLOManifest_Success(t *testing.T) {
+	var capturedMethod string
+	var capturedURI string
+	server, client := setupTestServer(func(w http.ResponseWriter, r *http.Request) {
+		capturedMethod = r.Method
+		capturedURI = r.URL.RequestURI()
+		w.WriteHeader(201)
+	})
+	defer server.Close()
+
+	segments := []SLOSegment{
+		{Path: "segments/part1", Etag: "abc", SizeBytes: 1024},
+		{Path: "segments/part2", Etag: "def", SizeBytes: 2048},
+	}
+	err := client.CreateSLOManifest(context.Background(), "container", "bigfile.dat", segments)
+	assertNoError(t, err)
+
+	if capturedMethod != http.MethodPut {
+		t.Errorf("Method = %q, want PUT", capturedMethod)
+	}
+	if !strings.Contains(capturedURI, "multipart-manifest=put") {
+		t.Errorf("URI should contain multipart-manifest=put: %q", capturedURI)
+	}
+}

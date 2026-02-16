@@ -189,3 +189,27 @@ func TestCreateISOImage_Success(t *testing.T) {
 		t.Errorf("unexpected image: %+v", img)
 	}
 }
+
+// ============================================================
+// Image Usage
+// ============================================================
+
+func TestGetImageUsage_Success(t *testing.T) {
+	var capturedPath string
+	server, client := setupTestServer(func(w http.ResponseWriter, r *http.Request) {
+		capturedPath = r.URL.Path
+		w.WriteHeader(200)
+		w.Write([]byte(`{"images":{"size":5368709120}}`))
+	})
+	defer server.Close()
+
+	usage, err := client.GetImageUsage(context.Background())
+	assertNoError(t, err)
+
+	if capturedPath != "/images/total" {
+		t.Errorf("Path = %q", capturedPath)
+	}
+	if usage.Size != 5368709120 {
+		t.Errorf("Size = %d", usage.Size)
+	}
+}

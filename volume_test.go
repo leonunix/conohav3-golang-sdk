@@ -228,6 +228,27 @@ func TestListBackups_Success(t *testing.T) {
 	}
 }
 
+func TestListBackups_WithOptions(t *testing.T) {
+	var capturedURI string
+	server, client := setupTestServer(func(w http.ResponseWriter, r *http.Request) {
+		capturedURI = r.URL.RequestURI()
+		w.WriteHeader(200)
+		w.Write([]byte(`{"backups":[]}`))
+	})
+	defer server.Close()
+
+	opts := &ListBackupsOptions{Limit: 10, Offset: 5, Sort: "created_at:desc"}
+	_, err := client.ListBackups(context.Background(), opts)
+	assertNoError(t, err)
+
+	if !strings.Contains(capturedURI, "limit=10") {
+		t.Errorf("URI should contain limit=10: %q", capturedURI)
+	}
+	if !strings.Contains(capturedURI, "offset=5") {
+		t.Errorf("URI should contain offset=5: %q", capturedURI)
+	}
+}
+
 func TestGetBackup_Success(t *testing.T) {
 	server, client := setupTestServer(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(200)
@@ -280,5 +301,123 @@ func TestRestoreBackup_Success(t *testing.T) {
 	}
 	if result.BackupID != "bk-123" || result.VolumeID != "vol-456" {
 		t.Errorf("unexpected restore: %+v", result)
+	}
+}
+
+// ============================================================
+// ListVolumesDetail
+// ============================================================
+
+func TestListVolumesDetail_Success(t *testing.T) {
+	var capturedPath string
+	server, client := setupTestServer(func(w http.ResponseWriter, r *http.Request) {
+		capturedPath = r.URL.Path
+		w.WriteHeader(200)
+		w.Write([]byte(`{"volumes":[{"id":"vol-1","name":"volume1","size":50,"status":"available"}]}`))
+	})
+	defer server.Close()
+
+	volumes, err := client.ListVolumesDetail(context.Background(), nil)
+	assertNoError(t, err)
+
+	if !strings.Contains(capturedPath, "/test-tenant-id/volumes/detail") {
+		t.Errorf("Path should contain /volumes/detail: %q", capturedPath)
+	}
+	if len(volumes) != 1 || volumes[0].ID != "vol-1" {
+		t.Errorf("unexpected volumes: %+v", volumes)
+	}
+}
+
+func TestListVolumesDetail_WithOptions(t *testing.T) {
+	var capturedURI string
+	server, client := setupTestServer(func(w http.ResponseWriter, r *http.Request) {
+		capturedURI = r.URL.RequestURI()
+		w.WriteHeader(200)
+		w.Write([]byte(`{"volumes":[]}`))
+	})
+	defer server.Close()
+
+	opts := &ListVolumesOptions{Limit: 10, Offset: 5, Sort: "name:asc"}
+	_, err := client.ListVolumesDetail(context.Background(), opts)
+	assertNoError(t, err)
+
+	if !strings.Contains(capturedURI, "limit=10") {
+		t.Errorf("URI should contain limit=10: %q", capturedURI)
+	}
+	if !strings.Contains(capturedURI, "offset=5") {
+		t.Errorf("URI should contain offset=5: %q", capturedURI)
+	}
+	if !strings.Contains(capturedURI, "sort=name") {
+		t.Errorf("URI should contain sort: %q", capturedURI)
+	}
+}
+
+// ============================================================
+// ListBackupsDetail
+// ============================================================
+
+func TestListBackupsDetail_Success(t *testing.T) {
+	var capturedPath string
+	server, client := setupTestServer(func(w http.ResponseWriter, r *http.Request) {
+		capturedPath = r.URL.Path
+		w.WriteHeader(200)
+		w.Write([]byte(`{"backups":[{"id":"bk-1","name":"backup1","status":"available","size":100}]}`))
+	})
+	defer server.Close()
+
+	backups, err := client.ListBackupsDetail(context.Background(), nil)
+	assertNoError(t, err)
+
+	if !strings.Contains(capturedPath, "/test-tenant-id/backups/detail") {
+		t.Errorf("Path should contain /backups/detail: %q", capturedPath)
+	}
+	if len(backups) != 1 || backups[0].ID != "bk-1" {
+		t.Errorf("unexpected backups: %+v", backups)
+	}
+}
+
+func TestListBackupsDetail_WithOptions(t *testing.T) {
+	var capturedURI string
+	server, client := setupTestServer(func(w http.ResponseWriter, r *http.Request) {
+		capturedURI = r.URL.RequestURI()
+		w.WriteHeader(200)
+		w.Write([]byte(`{"backups":[]}`))
+	})
+	defer server.Close()
+
+	opts := &ListBackupsOptions{Limit: 5, Offset: 10}
+	_, err := client.ListBackupsDetail(context.Background(), opts)
+	assertNoError(t, err)
+
+	if !strings.Contains(capturedURI, "limit=5") {
+		t.Errorf("URI should contain limit=5: %q", capturedURI)
+	}
+	if !strings.Contains(capturedURI, "offset=10") {
+		t.Errorf("URI should contain offset=10: %q", capturedURI)
+	}
+}
+
+// ============================================================
+// DisableAutoBackup
+// ============================================================
+
+func TestDisableAutoBackup_Success(t *testing.T) {
+	var capturedMethod string
+	var capturedPath string
+	server, client := setupTestServer(func(w http.ResponseWriter, r *http.Request) {
+		capturedMethod = r.Method
+		capturedPath = r.URL.Path
+		w.WriteHeader(204)
+	})
+	defer server.Close()
+
+	err := client.DisableAutoBackup(context.Background(), "srv-123")
+	assertNoError(t, err)
+
+	if capturedMethod != http.MethodDelete {
+		t.Errorf("Method = %q", capturedMethod)
+	}
+	if !strings.Contains(capturedPath, "/test-tenant-id/backups/srv-123") {
+		t.Errorf("Path = %q", capturedPath)
 	}
 }

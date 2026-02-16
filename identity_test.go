@@ -357,3 +357,203 @@ func TestListPermissions_Success(t *testing.T) {
 		t.Fatalf("got %d permissions", len(perms))
 	}
 }
+
+// ============================================================
+// GetCredential
+// ============================================================
+
+func TestGetCredential_Success(t *testing.T) {
+	var capturedPath string
+	server, client := setupTestServer(func(w http.ResponseWriter, r *http.Request) {
+		capturedPath = r.URL.Path
+		w.WriteHeader(200)
+		w.Write([]byte(`{"credential":{"access":"ak-123","secret":"sk-456","user_id":"uid"}}`))
+	})
+	defer server.Close()
+
+	cred, err := client.GetCredential(context.Background(), "user-123", "ak-123")
+	assertNoError(t, err)
+
+	if !strings.Contains(capturedPath, "/users/user-123/credentials/OS-EC2/ak-123") {
+		t.Errorf("Path = %q", capturedPath)
+	}
+	if cred.Access != "ak-123" {
+		t.Errorf("Access = %q", cred.Access)
+	}
+}
+
+// ============================================================
+// GetSubUser / UpdateSubUser
+// ============================================================
+
+func TestGetSubUser_Success(t *testing.T) {
+	var capturedPath string
+	server, client := setupTestServer(func(w http.ResponseWriter, r *http.Request) {
+		capturedPath = r.URL.Path
+		w.WriteHeader(200)
+		w.Write([]byte(`{"user":{"id":"sub-123","name":"subuser1"}}`))
+	})
+	defer server.Close()
+
+	user, err := client.GetSubUser(context.Background(), "sub-123")
+	assertNoError(t, err)
+
+	if !strings.Contains(capturedPath, "/sub-users/sub-123") {
+		t.Errorf("Path = %q", capturedPath)
+	}
+	if user.ID != "sub-123" {
+		t.Errorf("ID = %q", user.ID)
+	}
+}
+
+func TestUpdateSubUser_Success(t *testing.T) {
+	var capturedMethod string
+	server, client := setupTestServer(func(w http.ResponseWriter, r *http.Request) {
+		capturedMethod = r.Method
+		w.WriteHeader(200)
+		w.Write([]byte(`{"user":{"id":"sub-123","name":"subuser1"}}`))
+	})
+	defer server.Close()
+
+	user, err := client.UpdateSubUser(context.Background(), "sub-123", "newpass")
+	assertNoError(t, err)
+
+	if capturedMethod != http.MethodPut {
+		t.Errorf("Method = %q", capturedMethod)
+	}
+	if user.ID != "sub-123" {
+		t.Errorf("ID = %q", user.ID)
+	}
+}
+
+// ============================================================
+// AssignRolesToSubUser / UnassignRolesFromSubUser
+// ============================================================
+
+func TestAssignRolesToSubUser_Success(t *testing.T) {
+	var capturedPath string
+	server, client := setupTestServer(func(w http.ResponseWriter, r *http.Request) {
+		capturedPath = r.URL.Path
+		w.WriteHeader(200)
+		w.Write([]byte(`{"user":{"id":"sub-123","name":"subuser1","roles":[{"id":"role-1","name":"admin"}]}}`))
+	})
+	defer server.Close()
+
+	user, err := client.AssignRolesToSubUser(context.Background(), "sub-123", []string{"role-1"})
+	assertNoError(t, err)
+
+	if !strings.Contains(capturedPath, "/sub-users/sub-123/assign") {
+		t.Errorf("Path = %q", capturedPath)
+	}
+	if len(user.Roles) != 1 {
+		t.Errorf("expected 1 role, got %d", len(user.Roles))
+	}
+}
+
+func TestUnassignRolesFromSubUser_Success(t *testing.T) {
+	var capturedPath string
+	server, client := setupTestServer(func(w http.ResponseWriter, r *http.Request) {
+		capturedPath = r.URL.Path
+		w.WriteHeader(200)
+		w.Write([]byte(`{"user":{"id":"sub-123","name":"subuser1","roles":[]}}`))
+	})
+	defer server.Close()
+
+	user, err := client.UnassignRolesFromSubUser(context.Background(), "sub-123", []string{"role-1"})
+	assertNoError(t, err)
+
+	if !strings.Contains(capturedPath, "/sub-users/sub-123/unassign") {
+		t.Errorf("Path = %q", capturedPath)
+	}
+	if len(user.Roles) != 0 {
+		t.Errorf("expected 0 roles, got %d", len(user.Roles))
+	}
+}
+
+// ============================================================
+// GetRole / UpdateRole
+// ============================================================
+
+func TestGetRole_Success(t *testing.T) {
+	var capturedPath string
+	server, client := setupTestServer(func(w http.ResponseWriter, r *http.Request) {
+		capturedPath = r.URL.Path
+		w.WriteHeader(200)
+		w.Write([]byte(`{"role":{"id":"role-123","name":"admin","visibility":"public"}}`))
+	})
+	defer server.Close()
+
+	role, err := client.GetRole(context.Background(), "role-123")
+	assertNoError(t, err)
+
+	if !strings.Contains(capturedPath, "/sub-users/roles/role-123") {
+		t.Errorf("Path = %q", capturedPath)
+	}
+	if role.Name != "admin" {
+		t.Errorf("Name = %q", role.Name)
+	}
+}
+
+func TestUpdateRole_Success(t *testing.T) {
+	var capturedMethod string
+	server, client := setupTestServer(func(w http.ResponseWriter, r *http.Request) {
+		capturedMethod = r.Method
+		w.WriteHeader(200)
+		w.Write([]byte(`{"role":{"id":"role-123","name":"renamed"}}`))
+	})
+	defer server.Close()
+
+	role, err := client.UpdateRole(context.Background(), "role-123", "renamed")
+	assertNoError(t, err)
+
+	if capturedMethod != http.MethodPut {
+		t.Errorf("Method = %q", capturedMethod)
+	}
+	if role.Name != "renamed" {
+		t.Errorf("Name = %q", role.Name)
+	}
+}
+
+// ============================================================
+// AssignPermissionsToRole / UnassignPermissionsFromRole
+// ============================================================
+
+func TestAssignPermissionsToRole_Success(t *testing.T) {
+	var capturedPath string
+	server, client := setupTestServer(func(w http.ResponseWriter, r *http.Request) {
+		capturedPath = r.URL.Path
+		w.WriteHeader(200)
+		w.Write([]byte(`{"role":{"id":"role-123","name":"admin","permissions":["compute:read","compute:write"]}}`))
+	})
+	defer server.Close()
+
+	role, err := client.AssignPermissionsToRole(context.Background(), "role-123", []string{"compute:read", "compute:write"})
+	assertNoError(t, err)
+
+	if !strings.Contains(capturedPath, "/sub-users/roles/role-123/assign") {
+		t.Errorf("Path = %q", capturedPath)
+	}
+	if len(role.Permissions) != 2 {
+		t.Errorf("expected 2 permissions, got %d", len(role.Permissions))
+	}
+}
+
+func TestUnassignPermissionsFromRole_Success(t *testing.T) {
+	var capturedPath string
+	server, client := setupTestServer(func(w http.ResponseWriter, r *http.Request) {
+		capturedPath = r.URL.Path
+		w.WriteHeader(200)
+		w.Write([]byte(`{"role":{"id":"role-123","name":"admin","permissions":[]}}`))
+	})
+	defer server.Close()
+
+	role, err := client.UnassignPermissionsFromRole(context.Background(), "role-123", []string{"compute:read"})
+	assertNoError(t, err)
+
+	if !strings.Contains(capturedPath, "/sub-users/roles/role-123/unassign") {
+		t.Errorf("Path = %q", capturedPath)
+	}
+	if len(role.Permissions) != 0 {
+		t.Errorf("expected 0 permissions, got %d", len(role.Permissions))
+	}
+}

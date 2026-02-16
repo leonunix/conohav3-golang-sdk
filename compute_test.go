@@ -76,6 +76,30 @@ func TestListServersDetail_Success(t *testing.T) {
 	}
 }
 
+func TestListServersDetail_WithOptions(t *testing.T) {
+	var capturedURI string
+	server, client := setupTestServer(func(w http.ResponseWriter, r *http.Request) {
+		capturedURI = r.URL.RequestURI()
+		w.WriteHeader(200)
+		w.Write([]byte(`{"servers":[]}`))
+	})
+	defer server.Close()
+
+	opts := &ListServersOptions{Limit: 5, Status: "ACTIVE", Marker: "srv-prev"}
+	_, err := client.ListServersDetail(context.Background(), opts)
+	assertNoError(t, err)
+
+	if !strings.Contains(capturedURI, "limit=5") {
+		t.Errorf("URI should contain limit=5: %q", capturedURI)
+	}
+	if !strings.Contains(capturedURI, "status=ACTIVE") {
+		t.Errorf("URI should contain status=ACTIVE: %q", capturedURI)
+	}
+	if !strings.Contains(capturedURI, "marker=srv-prev") {
+		t.Errorf("URI should contain marker: %q", capturedURI)
+	}
+}
+
 func TestGetServer_Success(t *testing.T) {
 	var capturedPath string
 	server, client := setupTestServer(func(w http.ResponseWriter, r *http.Request) {
@@ -480,5 +504,436 @@ func TestGetNetworkTraffic_MissingPortID(t *testing.T) {
 
 	if !strings.Contains(err.Error(), "PortID is required") {
 		t.Errorf("error should mention PortID: %v", err)
+	}
+}
+
+func TestGetNetworkTraffic_Success(t *testing.T) {
+	var capturedURI string
+	server, client := setupTestServer(func(w http.ResponseWriter, r *http.Request) {
+		capturedURI = r.URL.RequestURI()
+		w.WriteHeader(200)
+		w.Write([]byte(`{"interface":{"schema":["timestamp","rx","tx"],"data":[]}}`))
+	})
+	defer server.Close()
+
+	opts := NetworkMonitoringOptions{PortID: "port-123"}
+	opts.Mode = "average"
+	_, err := client.GetNetworkTraffic(context.Background(), "srv-123", opts)
+	assertNoError(t, err)
+
+	if !strings.Contains(capturedURI, "port_id=port-123") {
+		t.Errorf("URI should contain port_id: %q", capturedURI)
+	}
+}
+
+func TestGetDiskIO_Success(t *testing.T) {
+	server, client := setupTestServer(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(200)
+		w.Write([]byte(`{"disk":{"schema":["timestamp","read","write"],"data":[]}}`))
+	})
+	defer server.Close()
+
+	opts := &DiskMonitoringOptions{Device: "vda"}
+	data, err := client.GetDiskIO(context.Background(), "srv-123", opts)
+	assertNoError(t, err)
+
+	if len(data.Schema) != 3 {
+		t.Errorf("Schema = %v", data.Schema)
+	}
+}
+
+// ============================================================
+// Additional Server methods
+// ============================================================
+
+func TestConfirmResize_Success(t *testing.T) {
+	var body map[string]interface{}
+	server, client := setupTestServer(func(w http.ResponseWriter, r *http.Request) {
+		readJSONBody(t, r, &body)
+		w.WriteHeader(204)
+	})
+	defer server.Close()
+
+	err := client.ConfirmResize(context.Background(), "srv-123")
+	assertNoError(t, err)
+
+	if _, ok := body["confirmResize"]; !ok {
+		t.Errorf("body should contain 'confirmResize': %v", body)
+	}
+}
+
+func TestRevertResize_Success(t *testing.T) {
+	var body map[string]interface{}
+	server, client := setupTestServer(func(w http.ResponseWriter, r *http.Request) {
+		readJSONBody(t, r, &body)
+		w.WriteHeader(204)
+	})
+	defer server.Close()
+
+	err := client.RevertResize(context.Background(), "srv-123")
+	assertNoError(t, err)
+
+	if _, ok := body["revertResize"]; !ok {
+		t.Errorf("body should contain 'revertResize': %v", body)
+	}
+}
+
+func TestSetVideoDevice_Success(t *testing.T) {
+	var body map[string]string
+	server, client := setupTestServer(func(w http.ResponseWriter, r *http.Request) {
+		readJSONBody(t, r, &body)
+		w.WriteHeader(202)
+	})
+	defer server.Close()
+
+	err := client.SetVideoDevice(context.Background(), "srv-123", "vga")
+	assertNoError(t, err)
+
+	if body["hwVideoModel"] != "vga" {
+		t.Errorf("hwVideoModel = %q", body["hwVideoModel"])
+	}
+}
+
+func TestSetNetworkAdapter_Success(t *testing.T) {
+	var body map[string]string
+	server, client := setupTestServer(func(w http.ResponseWriter, r *http.Request) {
+		readJSONBody(t, r, &body)
+		w.WriteHeader(202)
+	})
+	defer server.Close()
+
+	err := client.SetNetworkAdapter(context.Background(), "srv-123", "virtio")
+	assertNoError(t, err)
+
+	if body["hwVifModel"] != "virtio" {
+		t.Errorf("hwVifModel = %q", body["hwVifModel"])
+	}
+}
+
+func TestSetStorageController_Success(t *testing.T) {
+	var body map[string]string
+	server, client := setupTestServer(func(w http.ResponseWriter, r *http.Request) {
+		readJSONBody(t, r, &body)
+		w.WriteHeader(202)
+	})
+	defer server.Close()
+
+	err := client.SetStorageController(context.Background(), "srv-123", "virtio")
+	assertNoError(t, err)
+
+	if body["hwDiskBus"] != "virtio" {
+		t.Errorf("hwDiskBus = %q", body["hwDiskBus"])
+	}
+}
+
+func TestUnmountISO_Success(t *testing.T) {
+	var body map[string]interface{}
+	server, client := setupTestServer(func(w http.ResponseWriter, r *http.Request) {
+		readJSONBody(t, r, &body)
+		w.WriteHeader(202)
+	})
+	defer server.Close()
+
+	err := client.UnmountISO(context.Background(), "srv-123")
+	assertNoError(t, err)
+
+	if _, ok := body["unrescue"]; !ok {
+		t.Errorf("body should contain 'unrescue': %v", body)
+	}
+}
+
+func TestGetServerAddresses_Success(t *testing.T) {
+	server, client := setupTestServer(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(200)
+		w.Write([]byte(`{"addresses":{"public":[{"addr":"1.2.3.4","version":4}]}}`))
+	})
+	defer server.Close()
+
+	addrs, err := client.GetServerAddresses(context.Background(), "srv-123")
+	assertNoError(t, err)
+
+	if len(addrs["public"]) != 1 || addrs["public"][0].Addr != "1.2.3.4" {
+		t.Errorf("unexpected addresses: %+v", addrs)
+	}
+}
+
+func TestGetServerAddressesByNetwork_Success(t *testing.T) {
+	server, client := setupTestServer(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(200)
+		w.Write([]byte(`{"mynet":[{"addr":"10.0.0.1","version":4}]}`))
+	})
+	defer server.Close()
+
+	addrs, err := client.GetServerAddressesByNetwork(context.Background(), "srv-123", "mynet")
+	assertNoError(t, err)
+
+	if len(addrs) != 1 || addrs[0].Addr != "10.0.0.1" {
+		t.Errorf("unexpected addresses: %+v", addrs)
+	}
+}
+
+func TestGetServerSecurityGroups_Success(t *testing.T) {
+	server, client := setupTestServer(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(200)
+		w.Write([]byte(`{"security_groups":[{"id":"sg-1","name":"default"}]}`))
+	})
+	defer server.Close()
+
+	sgs, err := client.GetServerSecurityGroups(context.Background(), "srv-123")
+	assertNoError(t, err)
+
+	if len(sgs) != 1 || sgs[0].Name != "default" {
+		t.Errorf("unexpected sgs: %+v", sgs)
+	}
+}
+
+func TestGetConsoleURL_Success(t *testing.T) {
+	server, client := setupTestServer(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(200)
+		w.Write([]byte(`{"remote_console":{"protocol":"vnc","type":"novnc","url":"https://console.example.com/vnc"}}`))
+	})
+	defer server.Close()
+
+	console, err := client.GetConsoleURL(context.Background(), "srv-123", RemoteConsoleRequest{Protocol: "vnc", Type: "novnc"})
+	assertNoError(t, err)
+
+	if console.URL != "https://console.example.com/vnc" {
+		t.Errorf("URL = %q", console.URL)
+	}
+}
+
+func TestGetVNCConsoleURL_Success(t *testing.T) {
+	server, client := setupTestServer(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(200)
+		w.Write([]byte(`{"remote_console":{"protocol":"vnc","type":"novnc","url":"https://console.example.com/vnc"}}`))
+	})
+	defer server.Close()
+
+	url, err := client.GetVNCConsoleURL(context.Background(), "srv-123")
+	assertNoError(t, err)
+
+	if url != "https://console.example.com/vnc" {
+		t.Errorf("URL = %q", url)
+	}
+}
+
+func TestGetServerMetadata_Success(t *testing.T) {
+	server, client := setupTestServer(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(200)
+		w.Write([]byte(`{"metadata":{"env":"production","app":"web"}}`))
+	})
+	defer server.Close()
+
+	meta, err := client.GetServerMetadata(context.Background(), "srv-123")
+	assertNoError(t, err)
+
+	if meta["env"] != "production" {
+		t.Errorf("unexpected metadata: %+v", meta)
+	}
+}
+
+func TestUpdateServerMetadata_Success(t *testing.T) {
+	server, client := setupTestServer(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(200)
+		w.Write([]byte(`{"metadata":{"env":"staging"}}`))
+	})
+	defer server.Close()
+
+	meta, err := client.UpdateServerMetadata(context.Background(), "srv-123", map[string]string{"env": "staging"})
+	assertNoError(t, err)
+
+	if meta["env"] != "staging" {
+		t.Errorf("unexpected metadata: %+v", meta)
+	}
+}
+
+func TestImportKeypair_Success(t *testing.T) {
+	server, client := setupTestServer(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(200)
+		w.Write([]byte(`{"keypair":{"name":"imported","public_key":"ssh-rsa AAAA...","fingerprint":"aa:bb:cc"}}`))
+	})
+	defer server.Close()
+
+	kp, err := client.ImportKeypair(context.Background(), "imported", "ssh-rsa AAAA...")
+	assertNoError(t, err)
+
+	if kp.Name != "imported" {
+		t.Errorf("Name = %q", kp.Name)
+	}
+}
+
+func TestGetKeypair_Success(t *testing.T) {
+	server, client := setupTestServer(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(200)
+		w.Write([]byte(`{"keypair":{"name":"mykey","fingerprint":"aa:bb:cc"}}`))
+	})
+	defer server.Close()
+
+	kp, err := client.GetKeypair(context.Background(), "mykey")
+	assertNoError(t, err)
+
+	if kp.Fingerprint != "aa:bb:cc" {
+		t.Errorf("Fingerprint = %q", kp.Fingerprint)
+	}
+}
+
+// ============================================================
+// Server Interfaces & Volume Attachments
+// ============================================================
+
+func TestListServerInterfaces_Success(t *testing.T) {
+	server, client := setupTestServer(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(200)
+		w.Write([]byte(`{"interfaceAttachments":[{"port_id":"port-1","net_id":"net-1"}]}`))
+	})
+	defer server.Close()
+
+	ifaces, err := client.ListServerInterfaces(context.Background(), "srv-123")
+	assertNoError(t, err)
+
+	if len(ifaces) != 1 || ifaces[0].PortID != "port-1" {
+		t.Errorf("unexpected interfaces: %+v", ifaces)
+	}
+}
+
+func TestGetServerInterface_Success(t *testing.T) {
+	server, client := setupTestServer(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(200)
+		w.Write([]byte(`{"interfaceAttachment":{"port_id":"port-1","net_id":"net-1"}}`))
+	})
+	defer server.Close()
+
+	iface, err := client.GetServerInterface(context.Background(), "srv-123", "port-1")
+	assertNoError(t, err)
+
+	if iface.PortID != "port-1" {
+		t.Errorf("PortID = %q", iface.PortID)
+	}
+}
+
+func TestAttachPort_Success(t *testing.T) {
+	server, client := setupTestServer(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(200)
+		w.Write([]byte(`{"interfaceAttachment":{"port_id":"port-new","net_id":"net-1"}}`))
+	})
+	defer server.Close()
+
+	iface, err := client.AttachPort(context.Background(), "srv-123", "port-new")
+	assertNoError(t, err)
+
+	if iface.PortID != "port-new" {
+		t.Errorf("PortID = %q", iface.PortID)
+	}
+}
+
+func TestDetachPort_Success(t *testing.T) {
+	var capturedPath string
+	server, client := setupTestServer(func(w http.ResponseWriter, r *http.Request) {
+		capturedPath = r.URL.Path
+		w.WriteHeader(202)
+	})
+	defer server.Close()
+
+	err := client.DetachPort(context.Background(), "srv-123", "port-1")
+	assertNoError(t, err)
+
+	if capturedPath != "/servers/srv-123/os-interface/port-1" {
+		t.Errorf("Path = %q", capturedPath)
+	}
+}
+
+func TestListServerVolumes_Success(t *testing.T) {
+	server, client := setupTestServer(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(200)
+		w.Write([]byte(`{"volumeAttachments":[{"id":"att-1","volumeId":"vol-1","serverId":"srv-123"}]}`))
+	})
+	defer server.Close()
+
+	vols, err := client.ListServerVolumes(context.Background(), "srv-123")
+	assertNoError(t, err)
+
+	if len(vols) != 1 || vols[0].VolumeID != "vol-1" {
+		t.Errorf("unexpected attachments: %+v", vols)
+	}
+}
+
+func TestGetServerVolume_Success(t *testing.T) {
+	server, client := setupTestServer(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(200)
+		w.Write([]byte(`{"volumeAttachment":{"id":"att-1","volumeId":"vol-1","device":"/dev/vdb"}}`))
+	})
+	defer server.Close()
+
+	att, err := client.GetServerVolume(context.Background(), "srv-123", "vol-1")
+	assertNoError(t, err)
+
+	if att.Device != "/dev/vdb" {
+		t.Errorf("Device = %q", att.Device)
+	}
+}
+
+func TestAttachVolume_Success(t *testing.T) {
+	server, client := setupTestServer(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(200)
+		w.Write([]byte(`{"volumeAttachment":{"id":"att-new","volumeId":"vol-1","serverId":"srv-123"}}`))
+	})
+	defer server.Close()
+
+	att, err := client.AttachVolume(context.Background(), "srv-123", "vol-1")
+	assertNoError(t, err)
+
+	if att.VolumeID != "vol-1" {
+		t.Errorf("VolumeID = %q", att.VolumeID)
+	}
+}
+
+func TestDetachVolume_Success(t *testing.T) {
+	var capturedPath string
+	server, client := setupTestServer(func(w http.ResponseWriter, r *http.Request) {
+		capturedPath = r.URL.Path
+		w.WriteHeader(202)
+	})
+	defer server.Close()
+
+	err := client.DetachVolume(context.Background(), "srv-123", "vol-1")
+	assertNoError(t, err)
+
+	if capturedPath != "/servers/srv-123/os-volume_attachments/vol-1" {
+		t.Errorf("Path = %q", capturedPath)
+	}
+}
+
+// ============================================================
+// GetCPUUsage with options
+// ============================================================
+
+func TestGetCPUUsage_WithOptions(t *testing.T) {
+	var capturedURI string
+	server, client := setupTestServer(func(w http.ResponseWriter, r *http.Request) {
+		capturedURI = r.URL.RequestURI()
+		w.WriteHeader(200)
+		w.Write([]byte(`{"cpu":{"schema":["timestamp","cpu"],"data":[[1700000000,50.5]]}}`))
+	})
+	defer server.Close()
+
+	opts := &MonitoringOptions{
+		StartDateRaw: "2024-01-01",
+		EndDateRaw:   "2024-01-02",
+		Mode:         "average",
+	}
+	cpu, err := client.GetCPUUsage(context.Background(), "srv-123", opts)
+	assertNoError(t, err)
+
+	if !strings.Contains(capturedURI, "/servers/srv-123/rrd/cpu") {
+		t.Errorf("URI = %q", capturedURI)
+	}
+	if !strings.Contains(capturedURI, "mode=average") {
+		t.Errorf("URI should contain mode=average: %q", capturedURI)
+	}
+	if !strings.Contains(capturedURI, "start_date_raw=2024-01-01") {
+		t.Errorf("URI should contain start_date_raw: %q", capturedURI)
+	}
+	if len(cpu.Schema) != 2 {
+		t.Errorf("Schema length = %d", len(cpu.Schema))
 	}
 }

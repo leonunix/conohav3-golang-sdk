@@ -32,6 +32,27 @@ func TestListNetworks_Success(t *testing.T) {
 	}
 }
 
+func TestListNetworks_WithOptions(t *testing.T) {
+	var capturedURI string
+	server, client := setupTestServer(func(w http.ResponseWriter, r *http.Request) {
+		capturedURI = r.URL.RequestURI()
+		w.WriteHeader(200)
+		w.Write([]byte(`{"networks":[]}`))
+	})
+	defer server.Close()
+
+	opts := &ListNetworksOptions{Limit: 10, Marker: "net-prev"}
+	_, err := client.ListNetworks(context.Background(), opts)
+	assertNoError(t, err)
+
+	if !strings.Contains(capturedURI, "limit=10") {
+		t.Errorf("URI should contain limit=10: %q", capturedURI)
+	}
+	if !strings.Contains(capturedURI, "marker=net-prev") {
+		t.Errorf("URI should contain marker: %q", capturedURI)
+	}
+}
+
 func TestGetNetwork_Success(t *testing.T) {
 	server, client := setupTestServer(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(200)
@@ -107,6 +128,27 @@ func TestListSubnets_Success(t *testing.T) {
 	}
 }
 
+func TestListSubnets_WithOptions(t *testing.T) {
+	var capturedURI string
+	server, client := setupTestServer(func(w http.ResponseWriter, r *http.Request) {
+		capturedURI = r.URL.RequestURI()
+		w.WriteHeader(200)
+		w.Write([]byte(`{"subnets":[]}`))
+	})
+	defer server.Close()
+
+	opts := &ListSubnetsOptions{Limit: 5, Marker: "sub-prev"}
+	_, err := client.ListSubnets(context.Background(), opts)
+	assertNoError(t, err)
+
+	if !strings.Contains(capturedURI, "limit=5") {
+		t.Errorf("URI should contain limit=5: %q", capturedURI)
+	}
+	if !strings.Contains(capturedURI, "marker=sub-prev") {
+		t.Errorf("URI should contain marker: %q", capturedURI)
+	}
+}
+
 func TestCreateSubnet_Success(t *testing.T) {
 	var body map[string]json.RawMessage
 	server, client := setupTestServer(func(w http.ResponseWriter, r *http.Request) {
@@ -159,6 +201,27 @@ func TestListSecurityGroups_Success(t *testing.T) {
 
 	if len(sgs) != 1 || sgs[0].Name != "default" {
 		t.Errorf("unexpected security groups: %+v", sgs)
+	}
+}
+
+func TestListSecurityGroups_WithOptions(t *testing.T) {
+	var capturedURI string
+	server, client := setupTestServer(func(w http.ResponseWriter, r *http.Request) {
+		capturedURI = r.URL.RequestURI()
+		w.WriteHeader(200)
+		w.Write([]byte(`{"security_groups":[]}`))
+	})
+	defer server.Close()
+
+	opts := &ListSecurityGroupsOptions{Limit: 10, Marker: "sg-prev"}
+	_, err := client.ListSecurityGroups(context.Background(), opts)
+	assertNoError(t, err)
+
+	if !strings.Contains(capturedURI, "limit=10") {
+		t.Errorf("URI should contain limit=10: %q", capturedURI)
+	}
+	if !strings.Contains(capturedURI, "marker=sg-prev") {
+		t.Errorf("URI should contain marker: %q", capturedURI)
 	}
 }
 
@@ -356,6 +419,27 @@ func TestListQoSPolicies_Success(t *testing.T) {
 	}
 }
 
+func TestListQoSPolicies_WithOptions(t *testing.T) {
+	var capturedURI string
+	server, client := setupTestServer(func(w http.ResponseWriter, r *http.Request) {
+		capturedURI = r.URL.RequestURI()
+		w.WriteHeader(200)
+		w.Write([]byte(`{"policies":[]}`))
+	})
+	defer server.Close()
+
+	opts := &ListQoSPoliciesOptions{Limit: 10, Marker: "qos-prev"}
+	_, err := client.ListQoSPolicies(context.Background(), opts)
+	assertNoError(t, err)
+
+	if !strings.Contains(capturedURI, "limit=10") {
+		t.Errorf("URI should contain limit=10: %q", capturedURI)
+	}
+	if !strings.Contains(capturedURI, "marker=qos-prev") {
+		t.Errorf("URI should contain marker: %q", capturedURI)
+	}
+}
+
 func TestGetQoSPolicy_Success(t *testing.T) {
 	server, client := setupTestServer(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(200)
@@ -371,5 +455,198 @@ func TestGetQoSPolicy_Success(t *testing.T) {
 	}
 	if len(policy.Rules) != 1 {
 		t.Errorf("expected 1 rule, got %d", len(policy.Rules))
+	}
+}
+
+// ============================================================
+// GetSubnet
+// ============================================================
+
+func TestGetSubnet_Success(t *testing.T) {
+	var capturedPath string
+	server, client := setupTestServer(func(w http.ResponseWriter, r *http.Request) {
+		capturedPath = r.URL.Path
+		w.WriteHeader(200)
+		w.Write([]byte(`{"subnet":{"id":"sub-123","cidr":"10.0.0.0/24","ip_version":4,"network_id":"net-1"}}`))
+	})
+	defer server.Close()
+
+	subnet, err := client.GetSubnet(context.Background(), "sub-123")
+	assertNoError(t, err)
+
+	if capturedPath != "/subnets/sub-123" {
+		t.Errorf("Path = %q", capturedPath)
+	}
+	if subnet.CIDR != "10.0.0.0/24" {
+		t.Errorf("CIDR = %q", subnet.CIDR)
+	}
+}
+
+// ============================================================
+// UpdateSecurityGroup
+// ============================================================
+
+func TestUpdateSecurityGroup_Success(t *testing.T) {
+	var capturedMethod string
+	var capturedPath string
+	server, client := setupTestServer(func(w http.ResponseWriter, r *http.Request) {
+		capturedMethod = r.Method
+		capturedPath = r.URL.Path
+		w.WriteHeader(200)
+		w.Write([]byte(`{"security_group":{"id":"sg-123","name":"updated-sg","description":"updated desc"}}`))
+	})
+	defer server.Close()
+
+	sg, err := client.UpdateSecurityGroup(context.Background(), "sg-123", "updated-sg", "updated desc")
+	assertNoError(t, err)
+
+	if capturedMethod != http.MethodPut {
+		t.Errorf("Method = %q", capturedMethod)
+	}
+	if capturedPath != "/security-groups/sg-123" {
+		t.Errorf("Path = %q", capturedPath)
+	}
+	if sg.Name != "updated-sg" {
+		t.Errorf("Name = %q", sg.Name)
+	}
+}
+
+// ============================================================
+// ListSecurityGroupRules / GetSecurityGroupRule
+// ============================================================
+
+func TestListSecurityGroupRules_Success(t *testing.T) {
+	var capturedPath string
+	server, client := setupTestServer(func(w http.ResponseWriter, r *http.Request) {
+		capturedPath = r.URL.Path
+		w.WriteHeader(200)
+		w.Write([]byte(`{"security_group_rules":[{"id":"rule-1","direction":"ingress","ethertype":"IPv4"}]}`))
+	})
+	defer server.Close()
+
+	rules, err := client.ListSecurityGroupRules(context.Background(), nil)
+	assertNoError(t, err)
+
+	if capturedPath != "/security-group-rules" {
+		t.Errorf("Path = %q", capturedPath)
+	}
+	if len(rules) != 1 || rules[0].Direction != "ingress" {
+		t.Errorf("unexpected rules: %+v", rules)
+	}
+}
+
+func TestListSecurityGroupRules_WithOptions(t *testing.T) {
+	var capturedURI string
+	server, client := setupTestServer(func(w http.ResponseWriter, r *http.Request) {
+		capturedURI = r.URL.RequestURI()
+		w.WriteHeader(200)
+		w.Write([]byte(`{"security_group_rules":[]}`))
+	})
+	defer server.Close()
+
+	opts := &ListSecurityGroupRulesOptions{SecurityGroupID: "sg-123", Limit: 10}
+	_, err := client.ListSecurityGroupRules(context.Background(), opts)
+	assertNoError(t, err)
+
+	if !strings.Contains(capturedURI, "security_group_id=sg-123") {
+		t.Errorf("URI should contain security_group_id: %q", capturedURI)
+	}
+	if !strings.Contains(capturedURI, "limit=10") {
+		t.Errorf("URI should contain limit=10: %q", capturedURI)
+	}
+}
+
+func TestGetSecurityGroupRule_Success(t *testing.T) {
+	var capturedPath string
+	server, client := setupTestServer(func(w http.ResponseWriter, r *http.Request) {
+		capturedPath = r.URL.Path
+		w.WriteHeader(200)
+		w.Write([]byte(`{"security_group_rule":{"id":"rule-123","direction":"egress","ethertype":"IPv4"}}`))
+	})
+	defer server.Close()
+
+	rule, err := client.GetSecurityGroupRule(context.Background(), "rule-123")
+	assertNoError(t, err)
+
+	if capturedPath != "/security-group-rules/rule-123" {
+		t.Errorf("Path = %q", capturedPath)
+	}
+	if rule.Direction != "egress" {
+		t.Errorf("Direction = %q", rule.Direction)
+	}
+}
+
+// ============================================================
+// GetPort / AllocateAdditionalIP / UpdatePort
+// ============================================================
+
+func TestGetPort_Success(t *testing.T) {
+	var capturedPath string
+	server, client := setupTestServer(func(w http.ResponseWriter, r *http.Request) {
+		capturedPath = r.URL.Path
+		w.WriteHeader(200)
+		w.Write([]byte(`{"port":{"id":"port-123","network_id":"net-1","status":"ACTIVE"}}`))
+	})
+	defer server.Close()
+
+	port, err := client.GetPort(context.Background(), "port-123")
+	assertNoError(t, err)
+
+	if capturedPath != "/ports/port-123" {
+		t.Errorf("Path = %q", capturedPath)
+	}
+	if port.Status != "ACTIVE" {
+		t.Errorf("Status = %q", port.Status)
+	}
+}
+
+func TestAllocateAdditionalIP_Success(t *testing.T) {
+	var capturedPath string
+	var body map[string]json.RawMessage
+	server, client := setupTestServer(func(w http.ResponseWriter, r *http.Request) {
+		capturedPath = r.URL.Path
+		readJSONBody(t, r, &body)
+		w.WriteHeader(201)
+		w.Write([]byte(`{"port":{"id":"port-new","network_id":"net-1"}}`))
+	})
+	defer server.Close()
+
+	port, err := client.AllocateAdditionalIP(context.Background(), 2, []string{"sg-1"})
+	assertNoError(t, err)
+
+	if capturedPath != "/allocateips" {
+		t.Errorf("Path = %q", capturedPath)
+	}
+	if _, ok := body["allocateip"]; !ok {
+		t.Error("body should contain 'allocateip'")
+	}
+	if port.ID != "port-new" {
+		t.Errorf("ID = %q", port.ID)
+	}
+}
+
+func TestUpdatePort_Success(t *testing.T) {
+	var capturedMethod string
+	var capturedPath string
+	server, client := setupTestServer(func(w http.ResponseWriter, r *http.Request) {
+		capturedMethod = r.Method
+		capturedPath = r.URL.Path
+		w.WriteHeader(200)
+		w.Write([]byte(`{"port":{"id":"port-123","network_id":"net-1","security_groups":["sg-new"]}}`))
+	})
+	defer server.Close()
+
+	opts := UpdatePortRequest{SecurityGroups: []string{"sg-new"}}
+	port, err := client.UpdatePort(context.Background(), "port-123", opts)
+	assertNoError(t, err)
+
+	if capturedMethod != http.MethodPut {
+		t.Errorf("Method = %q", capturedMethod)
+	}
+	if capturedPath != "/ports/port-123" {
+		t.Errorf("Path = %q", capturedPath)
+	}
+	if len(port.SecurityGroups) != 1 || port.SecurityGroups[0] != "sg-new" {
+		t.Errorf("SecurityGroups = %v", port.SecurityGroups)
 	}
 }
