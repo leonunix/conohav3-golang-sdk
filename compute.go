@@ -913,6 +913,9 @@ type NetworkMonitoringOptions struct {
 
 // GetNetworkTraffic gets network traffic data for a server.
 func (c *Client) GetNetworkTraffic(ctx context.Context, serverID string, opts NetworkMonitoringOptions) (*RRDData, error) {
+	if opts.PortID == "" {
+		return nil, fmt.Errorf("conoha: PortID is required for GetNetworkTraffic")
+	}
 	url := fmt.Sprintf("%s/v2.1/servers/%s/rrd/interface", c.ComputeURL, serverID)
 	params := map[string]string{"port_id": opts.PortID}
 	if opts.StartDateRaw != "" {

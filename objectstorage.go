@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
+	"strings"
 )
 
 // ------------------------------------------------------------
@@ -51,13 +53,15 @@ type ListObjectsOptions struct {
 	EndMarker string
 	Prefix    string
 	Delimiter string
-	Format    string
 }
 
 func (c *Client) objectStoragePath(parts ...string) string {
 	path := fmt.Sprintf("%s/v1/AUTH_%s", c.ObjectStorageURL, c.TenantID)
 	for _, p := range parts {
-		path += "/" + p
+		// Encode each segment but preserve "/" within object names.
+		encoded := url.PathEscape(p)
+		encoded = strings.ReplaceAll(encoded, "%2F", "/")
+		path += "/" + encoded
 	}
 	return path
 }

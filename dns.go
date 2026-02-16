@@ -55,9 +55,9 @@ type CreateDNSRecordRequest struct {
 	Name     string `json:"name"`
 	Type     string `json:"type"`
 	Data     string `json:"data"`
-	Priority *int   `json:"priority"`
-	Weight   *int   `json:"weight"`
-	Port     *int   `json:"port"`
+	Priority *int   `json:"priority,omitempty"`
+	Weight   *int   `json:"weight,omitempty"`
+	Port     *int   `json:"port,omitempty"`
 }
 
 // UpdateDNSRecordRequest is the request to update a DNS record.
@@ -65,9 +65,9 @@ type UpdateDNSRecordRequest struct {
 	Name     string `json:"name,omitempty"`
 	Type     string `json:"type,omitempty"`
 	Data     string `json:"data,omitempty"`
-	Priority *int   `json:"priority"`
-	Weight   *int   `json:"weight"`
-	Port     *int   `json:"port"`
+	Priority *int   `json:"priority,omitempty"`
+	Weight   *int   `json:"weight,omitempty"`
+	Port     *int   `json:"port,omitempty"`
 }
 
 type domainListResponse struct {

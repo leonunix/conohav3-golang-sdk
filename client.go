@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"strings"
 )
 
@@ -254,15 +255,20 @@ func (c *Client) fillURLsFromRegion() {
 
 // updateEndpointsFromCatalog updates endpoint URLs from the Service Catalog
 // returned by authentication. Only updates URLs that were NOT explicitly set.
+// When the client has a Region set, only endpoints matching that region are used.
 func (c *Client) updateEndpointsFromCatalog(catalog []ServiceCatalog) {
 	for _, svc := range catalog {
-		// Find the public endpoint URL
+		// Find the public endpoint URL, preferring one that matches the client's region.
 		var publicURL string
 		for _, ep := range svc.Endpoints {
-			if ep.Interface == "public" {
-				publicURL = strings.TrimRight(ep.URL, "/")
-				break
+			if ep.Interface != "public" {
+				continue
 			}
+			if c.Region != "" && ep.Region != c.Region && ep.RegionID != c.Region {
+				continue
+			}
+			publicURL = strings.TrimRight(ep.URL, "/")
+			break
 		}
 		if publicURL == "" {
 			continue
@@ -401,14 +407,14 @@ func buildQueryString(params map[string]string) string {
 	if len(params) == 0 {
 		return ""
 	}
-	parts := make([]string, 0, len(params))
+	vals := make(url.Values)
 	for k, v := range params {
 		if v != "" {
-			parts = append(parts, fmt.Sprintf("%s=%s", k, v))
+			vals.Set(k, v)
 		}
 	}
-	if len(parts) == 0 {
+	if len(vals) == 0 {
 		return ""
 	}
-	return "?" + strings.Join(parts, "&")
+	return "?" + vals.Encode()
 }
