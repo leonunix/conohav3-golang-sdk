@@ -123,6 +123,14 @@ type RemoteConsole struct {
 	URL      string `json:"url"`
 }
 
+// ListServersOptions are options for listing servers.
+type ListServersOptions struct {
+	Limit  int
+	Marker string
+	Status string
+	Name   string
+}
+
 type serverListResponse struct {
 	Servers []Server `json:"servers"`
 }
@@ -148,8 +156,24 @@ type remoteConsoleResponse struct {
 // ------------------------------------------------------------
 
 // ListServers lists servers (basic).
-func (c *Client) ListServers(ctx context.Context) ([]Server, error) {
+func (c *Client) ListServers(ctx context.Context, opts *ListServersOptions) ([]Server, error) {
 	url := c.ComputeURL + "/servers"
+	if opts != nil {
+		params := map[string]string{}
+		if opts.Limit > 0 {
+			params["limit"] = fmt.Sprintf("%d", opts.Limit)
+		}
+		if opts.Marker != "" {
+			params["marker"] = opts.Marker
+		}
+		if opts.Status != "" {
+			params["status"] = opts.Status
+		}
+		if opts.Name != "" {
+			params["name"] = opts.Name
+		}
+		url += buildQueryString(params)
+	}
 	req, err := c.newRequest(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
@@ -162,8 +186,24 @@ func (c *Client) ListServers(ctx context.Context) ([]Server, error) {
 }
 
 // ListServersDetail lists servers with full details.
-func (c *Client) ListServersDetail(ctx context.Context) ([]ServerDetail, error) {
+func (c *Client) ListServersDetail(ctx context.Context, opts *ListServersOptions) ([]ServerDetail, error) {
 	url := c.ComputeURL + "/servers/detail"
+	if opts != nil {
+		params := map[string]string{}
+		if opts.Limit > 0 {
+			params["limit"] = fmt.Sprintf("%d", opts.Limit)
+		}
+		if opts.Marker != "" {
+			params["marker"] = opts.Marker
+		}
+		if opts.Status != "" {
+			params["status"] = opts.Status
+		}
+		if opts.Name != "" {
+			params["name"] = opts.Name
+		}
+		url += buildQueryString(params)
+	}
 	req, err := c.newRequest(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err

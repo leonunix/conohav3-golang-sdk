@@ -49,7 +49,7 @@ func main() {
 	// --------------------------------------------------------
 	// 3. List Servers
 	// --------------------------------------------------------
-	servers, err := client.ListServersDetail(ctx)
+	servers, err := client.ListServersDetail(ctx, nil)
 	if err != nil {
 		log.Fatalf("List servers failed: %v", err)
 	}
@@ -90,7 +90,7 @@ func main() {
 	// --------------------------------------------------------
 	// 6. List Security Groups
 	// --------------------------------------------------------
-	sgs, err := client.ListSecurityGroups(ctx)
+	sgs, err := client.ListSecurityGroups(ctx, nil)
 	if err != nil {
 		log.Fatalf("List security groups failed: %v", err)
 	}

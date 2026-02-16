@@ -36,6 +36,12 @@ type QoSRule struct {
 	Type         string `json:"type"`
 }
 
+// ListQoSPoliciesOptions are options for listing QoS policies.
+type ListQoSPoliciesOptions struct {
+	Limit  int
+	Marker string
+}
+
 type qosPolicyListResponse struct {
 	Policies []QoSPolicy `json:"policies"`
 }
@@ -45,8 +51,18 @@ type qosPolicyResponse struct {
 }
 
 // ListQoSPolicies lists all QoS policies.
-func (c *Client) ListQoSPolicies(ctx context.Context) ([]QoSPolicy, error) {
+func (c *Client) ListQoSPolicies(ctx context.Context, opts *ListQoSPoliciesOptions) ([]QoSPolicy, error) {
 	url := c.NetworkingURL + "/qos/policies"
+	if opts != nil {
+		params := map[string]string{}
+		if opts.Limit > 0 {
+			params["limit"] = fmt.Sprintf("%d", opts.Limit)
+		}
+		if opts.Marker != "" {
+			params["marker"] = opts.Marker
+		}
+		url += buildQueryString(params)
+	}
 	req, err := c.newRequest(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
@@ -100,6 +116,12 @@ type AllocationPool struct {
 	End   string `json:"end"`
 }
 
+// ListSubnetsOptions are options for listing subnets.
+type ListSubnetsOptions struct {
+	Limit  int
+	Marker string
+}
+
 type subnetListResponse struct {
 	Subnets []Subnet `json:"subnets"`
 }
@@ -109,8 +131,18 @@ type subnetResponse struct {
 }
 
 // ListSubnets lists all subnets.
-func (c *Client) ListSubnets(ctx context.Context) ([]Subnet, error) {
+func (c *Client) ListSubnets(ctx context.Context, opts *ListSubnetsOptions) ([]Subnet, error) {
 	url := c.NetworkingURL + "/subnets"
+	if opts != nil {
+		params := map[string]string{}
+		if opts.Limit > 0 {
+			params["limit"] = fmt.Sprintf("%d", opts.Limit)
+		}
+		if opts.Marker != "" {
+			params["marker"] = opts.Marker
+		}
+		url += buildQueryString(params)
+	}
 	req, err := c.newRequest(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
@@ -209,12 +241,25 @@ type CreateSecurityGroupRuleRequest struct {
 	RemoteGroupID   *string `json:"remote_group_id,omitempty"`
 }
 
+// ListSecurityGroupsOptions are options for listing security groups.
+type ListSecurityGroupsOptions struct {
+	Limit  int
+	Marker string
+}
+
 type securityGroupListResponse struct {
 	SecurityGroups []SecurityGroup `json:"security_groups"`
 }
 
 type securityGroupResponse struct {
 	SecurityGroup SecurityGroup `json:"security_group"`
+}
+
+// ListSecurityGroupRulesOptions are options for listing security group rules.
+type ListSecurityGroupRulesOptions struct {
+	Limit           int
+	Marker          string
+	SecurityGroupID string
 }
 
 type securityGroupRuleListResponse struct {
@@ -226,8 +271,18 @@ type securityGroupRuleResponse struct {
 }
 
 // ListSecurityGroups lists all security groups.
-func (c *Client) ListSecurityGroups(ctx context.Context) ([]SecurityGroup, error) {
+func (c *Client) ListSecurityGroups(ctx context.Context, opts *ListSecurityGroupsOptions) ([]SecurityGroup, error) {
 	url := c.NetworkingURL + "/security-groups"
+	if opts != nil {
+		params := map[string]string{}
+		if opts.Limit > 0 {
+			params["limit"] = fmt.Sprintf("%d", opts.Limit)
+		}
+		if opts.Marker != "" {
+			params["marker"] = opts.Marker
+		}
+		url += buildQueryString(params)
+	}
 	req, err := c.newRequest(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
@@ -307,8 +362,21 @@ func (c *Client) DeleteSecurityGroup(ctx context.Context, sgID string) error {
 }
 
 // ListSecurityGroupRules lists all security group rules.
-func (c *Client) ListSecurityGroupRules(ctx context.Context) ([]SecurityGroupRule, error) {
+func (c *Client) ListSecurityGroupRules(ctx context.Context, opts *ListSecurityGroupRulesOptions) ([]SecurityGroupRule, error) {
 	url := c.NetworkingURL + "/security-group-rules"
+	if opts != nil {
+		params := map[string]string{}
+		if opts.Limit > 0 {
+			params["limit"] = fmt.Sprintf("%d", opts.Limit)
+		}
+		if opts.Marker != "" {
+			params["marker"] = opts.Marker
+		}
+		if opts.SecurityGroupID != "" {
+			params["security_group_id"] = opts.SecurityGroupID
+		}
+		url += buildQueryString(params)
+	}
 	req, err := c.newRequest(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
@@ -378,6 +446,12 @@ type Network struct {
 	External     bool     `json:"router:external"`
 }
 
+// ListNetworksOptions are options for listing networks.
+type ListNetworksOptions struct {
+	Limit  int
+	Marker string
+}
+
 type networkListResponse struct {
 	Networks []Network `json:"networks"`
 }
@@ -387,8 +461,18 @@ type networkResponse struct {
 }
 
 // ListNetworks lists all networks.
-func (c *Client) ListNetworks(ctx context.Context) ([]Network, error) {
+func (c *Client) ListNetworks(ctx context.Context, opts *ListNetworksOptions) ([]Network, error) {
 	url := c.NetworkingURL + "/networks"
+	if opts != nil {
+		params := map[string]string{}
+		if opts.Limit > 0 {
+			params["limit"] = fmt.Sprintf("%d", opts.Limit)
+		}
+		if opts.Marker != "" {
+			params["marker"] = opts.Marker
+		}
+		url += buildQueryString(params)
+	}
 	req, err := c.newRequest(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
@@ -490,6 +574,14 @@ type AllocateIPRequest struct {
 	SecurityGroups []string `json:"security_groups,omitempty"`
 }
 
+// ListPortsOptions are options for listing ports.
+type ListPortsOptions struct {
+	Limit     int
+	Marker    string
+	NetworkID string
+	DeviceID  string
+}
+
 type portListResponse struct {
 	Ports []Port `json:"ports"`
 }
@@ -499,8 +591,24 @@ type portResponse struct {
 }
 
 // ListPorts lists all ports.
-func (c *Client) ListPorts(ctx context.Context) ([]Port, error) {
+func (c *Client) ListPorts(ctx context.Context, opts *ListPortsOptions) ([]Port, error) {
 	url := c.NetworkingURL + "/ports"
+	if opts != nil {
+		params := map[string]string{}
+		if opts.Limit > 0 {
+			params["limit"] = fmt.Sprintf("%d", opts.Limit)
+		}
+		if opts.Marker != "" {
+			params["marker"] = opts.Marker
+		}
+		if opts.NetworkID != "" {
+			params["network_id"] = opts.NetworkID
+		}
+		if opts.DeviceID != "" {
+			params["device_id"] = opts.DeviceID
+		}
+		url += buildQueryString(params)
+	}
 	req, err := c.newRequest(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err

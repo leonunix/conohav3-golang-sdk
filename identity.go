@@ -161,6 +161,7 @@ func (c *Client) authenticate(ctx context.Context, authReq *AuthRequest, tenantI
 		return nil, err
 	}
 
+	c.mu.Lock()
 	c.Token = resp.Header.Get("X-Subject-Token")
 	if tenantID != "" {
 		c.TenantID = tenantID
@@ -173,6 +174,7 @@ func (c *Client) authenticate(ctx context.Context, authReq *AuthRequest, tenantI
 	if len(result.Token.Catalog) > 0 {
 		c.updateEndpointsFromCatalog(result.Token.Catalog)
 	}
+	c.mu.Unlock()
 
 	return &result.Token, nil
 }

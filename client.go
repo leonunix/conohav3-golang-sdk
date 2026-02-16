@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"sync"
 )
 
 const (
@@ -30,6 +31,10 @@ const (
 )
 
 // Client is the ConoHa VPS v3 API client.
+//
+// The Client is safe for concurrent use across goroutines. Internally it uses
+// a sync.RWMutex to protect Token, TenantID, and endpoint URL fields from
+// data races when Authenticate() is called concurrently with other API methods.
 type Client struct {
 	HTTPClient *http.Client
 	Token      string
@@ -44,6 +49,10 @@ type Client struct {
 	LBaaSURL         string
 	ObjectStorageURL string
 	DNSServiceURL    string
+
+	// mu protects Token, TenantID, and endpoint URL fields from concurrent
+	// read/write access (e.g. Authenticate writing while API methods read).
+	mu sync.RWMutex
 
 	// explicitURLs tracks which URLs were explicitly set by the user.
 	// These will NOT be overridden by Service Catalog auto-discovery.
@@ -317,20 +326,68 @@ func (c *Client) updateEndpointsFromCatalog(catalog []ServiceCatalog) {
 }
 
 // APIError represents an error response from the ConoHa API.
+//
+// The Body field always contains the raw response body string.
+// If the response body is a standard OpenStack JSON error (e.g.
+// {"badRequest": {"message": "Invalid input", "code": 400}}),
+// the Message and Code fields are populated with the parsed values.
 type APIError struct {
 	StatusCode int
 	Status     string
 	Body       string
+	Message    string // Parsed error message from JSON body, if available.
+	Code       int    // Parsed error code from JSON body, if available.
 }
 
 func (e *APIError) Error() string {
+	if e.Message != "" {
+		return fmt.Sprintf("conoha api error: %s: %s", e.Status, e.Message)
+	}
 	return fmt.Sprintf("conoha api error: %s (body: %s)", e.Status, e.Body)
+}
+
+// newAPIError creates an APIError and attempts to parse the body as a
+// standard OpenStack JSON error to extract a structured message and code.
+func newAPIError(statusCode int, status, body string) *APIError {
+	e := &APIError{
+		StatusCode: statusCode,
+		Status:     status,
+		Body:       body,
+	}
+
+	// Try to parse OpenStack-style error: {"errorType": {"message": "...", "code": N}}
+	var parsed map[string]json.RawMessage
+	if err := json.Unmarshal([]byte(body), &parsed); err != nil {
+		return e
+	}
+	for _, raw := range parsed {
+		var inner struct {
+			Message string `json:"message"`
+			Code    int    `json:"code"`
+		}
+		if err := json.Unmarshal(raw, &inner); err != nil {
+			continue
+		}
+		if inner.Message != "" {
+			e.Message = inner.Message
+			e.Code = inner.Code
+			break
+		}
+	}
+	return e
 }
 
 // Link represents a resource link.
 type Link struct {
 	Rel  string `json:"rel"`
 	Href string `json:"href"`
+}
+
+// tenantID returns the TenantID under a read lock.
+func (c *Client) tenantID() string {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	return c.TenantID
 }
 
 func (c *Client) newRequest(ctx context.Context, method, url string, body interface{}) (*http.Request, error) {
@@ -352,8 +409,11 @@ func (c *Client) newRequest(ctx context.Context, method, url string, body interf
 	if body != nil {
 		req.Header.Set("Content-Type", "application/json")
 	}
-	if c.Token != "" {
-		req.Header.Set("X-Auth-Token", c.Token)
+	c.mu.RLock()
+	token := c.Token
+	c.mu.RUnlock()
+	if token != "" {
+		req.Header.Set("X-Auth-Token", token)
 	}
 	return req, nil
 }
@@ -371,11 +431,7 @@ func (c *Client) do(req *http.Request, result interface{}) (*http.Response, erro
 	}
 
 	if resp.StatusCode >= 400 {
-		return resp, &APIError{
-			StatusCode: resp.StatusCode,
-			Status:     resp.Status,
-			Body:       string(respBody),
-		}
+		return resp, newAPIError(resp.StatusCode, resp.Status, string(respBody))
 	}
 
 	if result != nil && len(respBody) > 0 {
@@ -399,11 +455,7 @@ func (c *Client) doRaw(req *http.Request) (*http.Response, []byte, error) {
 	}
 
 	if resp.StatusCode >= 400 {
-		return resp, respBody, &APIError{
-			StatusCode: resp.StatusCode,
-			Status:     resp.Status,
-			Body:       string(respBody),
-		}
+		return resp, respBody, newAPIError(resp.StatusCode, resp.Status, string(respBody))
 	}
 	return resp, respBody, nil
 }

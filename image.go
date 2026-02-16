@@ -243,11 +243,7 @@ func (c *Client) UploadISOImage(ctx context.Context, imageID string, data io.Rea
 
 	if resp.StatusCode >= 400 {
 		respBody, _ := io.ReadAll(resp.Body)
-		return &APIError{
-			StatusCode: resp.StatusCode,
-			Status:     resp.Status,
-			Body:       string(respBody),
-		}
+		return newAPIError(resp.StatusCode, resp.Status, string(respBody))
 	}
 	return nil
 }

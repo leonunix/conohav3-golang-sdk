@@ -56,7 +56,7 @@ type ListObjectsOptions struct {
 }
 
 func (c *Client) objectStoragePath(parts ...string) string {
-	path := fmt.Sprintf("%s/AUTH_%s", c.ObjectStorageURL, c.TenantID)
+	path := fmt.Sprintf("%s/AUTH_%s", c.ObjectStorageURL, c.tenantID())
 	for _, p := range parts {
 		// Encode each segment but preserve "/" within object names.
 		encoded := url.PathEscape(p)
@@ -119,7 +119,7 @@ func (c *Client) SetAccountQuota(ctx context.Context, gigaBytes string) error {
 
 	if resp.StatusCode >= 400 {
 		body, _ := io.ReadAll(resp.Body)
-		return &APIError{StatusCode: resp.StatusCode, Status: resp.Status, Body: string(body)}
+		return newAPIError(resp.StatusCode, resp.Status, string(body))
 	}
 	return nil
 }
@@ -160,7 +160,7 @@ func (c *Client) CreateContainer(ctx context.Context, name string) error {
 
 	if resp.StatusCode >= 400 {
 		body, _ := io.ReadAll(resp.Body)
-		return &APIError{StatusCode: resp.StatusCode, Status: resp.Status, Body: string(body)}
+		return newAPIError(resp.StatusCode, resp.Status, string(body))
 	}
 	return nil
 }
@@ -183,7 +183,7 @@ func (c *Client) DeleteContainer(ctx context.Context, name string) error {
 
 	if resp.StatusCode >= 400 {
 		body, _ := io.ReadAll(resp.Body)
-		return &APIError{StatusCode: resp.StatusCode, Status: resp.Status, Body: string(body)}
+		return newAPIError(resp.StatusCode, resp.Status, string(body))
 	}
 	return nil
 }
@@ -245,7 +245,7 @@ func (c *Client) UploadObject(ctx context.Context, container, objectName string,
 
 	if resp.StatusCode >= 400 {
 		body, _ := io.ReadAll(resp.Body)
-		return &APIError{StatusCode: resp.StatusCode, Status: resp.Status, Body: string(body)}
+		return newAPIError(resp.StatusCode, resp.Status, string(body))
 	}
 	return nil
 }
@@ -267,7 +267,7 @@ func (c *Client) DownloadObject(ctx context.Context, container, objectName strin
 	if resp.StatusCode >= 400 {
 		body, _ := io.ReadAll(resp.Body)
 		resp.Body.Close()
-		return nil, &APIError{StatusCode: resp.StatusCode, Status: resp.Status, Body: string(body)}
+		return nil, newAPIError(resp.StatusCode, resp.Status, string(body))
 	}
 	return resp.Body, nil
 }
@@ -289,7 +289,7 @@ func (c *Client) DeleteObject(ctx context.Context, container, objectName string)
 
 	if resp.StatusCode >= 400 {
 		body, _ := io.ReadAll(resp.Body)
-		return &APIError{StatusCode: resp.StatusCode, Status: resp.Status, Body: string(body)}
+		return newAPIError(resp.StatusCode, resp.Status, string(body))
 	}
 	return nil
 }
@@ -312,7 +312,7 @@ func (c *Client) CopyObject(ctx context.Context, srcContainer, srcObject, dstCon
 
 	if resp.StatusCode >= 400 {
 		body, _ := io.ReadAll(resp.Body)
-		return &APIError{StatusCode: resp.StatusCode, Status: resp.Status, Body: string(body)}
+		return newAPIError(resp.StatusCode, resp.Status, string(body))
 	}
 	return nil
 }
@@ -335,7 +335,7 @@ func (c *Client) ScheduleObjectDeletion(ctx context.Context, container, objectNa
 
 	if resp.StatusCode >= 400 {
 		body, _ := io.ReadAll(resp.Body)
-		return &APIError{StatusCode: resp.StatusCode, Status: resp.Status, Body: string(body)}
+		return newAPIError(resp.StatusCode, resp.Status, string(body))
 	}
 	return nil
 }
@@ -358,7 +358,7 @@ func (c *Client) ScheduleObjectDeletionAfter(ctx context.Context, container, obj
 
 	if resp.StatusCode >= 400 {
 		body, _ := io.ReadAll(resp.Body)
-		return &APIError{StatusCode: resp.StatusCode, Status: resp.Status, Body: string(body)}
+		return newAPIError(resp.StatusCode, resp.Status, string(body))
 	}
 	return nil
 }
@@ -385,7 +385,7 @@ func (c *Client) EnableVersioning(ctx context.Context, container, versionsContai
 
 	if resp.StatusCode >= 400 {
 		body, _ := io.ReadAll(resp.Body)
-		return &APIError{StatusCode: resp.StatusCode, Status: resp.Status, Body: string(body)}
+		return newAPIError(resp.StatusCode, resp.Status, string(body))
 	}
 	return nil
 }
@@ -408,7 +408,7 @@ func (c *Client) DisableVersioning(ctx context.Context, container string) error 
 
 	if resp.StatusCode >= 400 {
 		body, _ := io.ReadAll(resp.Body)
-		return &APIError{StatusCode: resp.StatusCode, Status: resp.Status, Body: string(body)}
+		return newAPIError(resp.StatusCode, resp.Status, string(body))
 	}
 	return nil
 }
@@ -431,7 +431,7 @@ func (c *Client) EnableWebPublishing(ctx context.Context, container string) erro
 
 	if resp.StatusCode >= 400 {
 		body, _ := io.ReadAll(resp.Body)
-		return &APIError{StatusCode: resp.StatusCode, Status: resp.Status, Body: string(body)}
+		return newAPIError(resp.StatusCode, resp.Status, string(body))
 	}
 	return nil
 }
@@ -454,7 +454,7 @@ func (c *Client) DisableWebPublishing(ctx context.Context, container string) err
 
 	if resp.StatusCode >= 400 {
 		body, _ := io.ReadAll(resp.Body)
-		return &APIError{StatusCode: resp.StatusCode, Status: resp.Status, Body: string(body)}
+		return newAPIError(resp.StatusCode, resp.Status, string(body))
 	}
 	return nil
 }
@@ -477,7 +477,7 @@ func (c *Client) SetTempURLKey(ctx context.Context, key string) error {
 
 	if resp.StatusCode >= 400 {
 		body, _ := io.ReadAll(resp.Body)
-		return &APIError{StatusCode: resp.StatusCode, Status: resp.Status, Body: string(body)}
+		return newAPIError(resp.StatusCode, resp.Status, string(body))
 	}
 	return nil
 }
@@ -505,7 +505,7 @@ func (c *Client) CreateDLOManifest(ctx context.Context, container, manifestName,
 
 	if resp.StatusCode >= 400 {
 		body, _ := io.ReadAll(resp.Body)
-		return &APIError{StatusCode: resp.StatusCode, Status: resp.Status, Body: string(body)}
+		return newAPIError(resp.StatusCode, resp.Status, string(body))
 	}
 	return nil
 }
@@ -527,7 +527,7 @@ func (c *Client) CreateSLOManifest(ctx context.Context, container, manifestName 
 
 	if resp.StatusCode >= 400 {
 		body, _ := io.ReadAll(resp.Body)
-		return &APIError{StatusCode: resp.StatusCode, Status: resp.Status, Body: string(body)}
+		return newAPIError(resp.StatusCode, resp.Status, string(body))
 	}
 	return nil
 }
