@@ -89,7 +89,7 @@ type ListVolumesOptions struct {
 
 // ListVolumes lists volumes (basic).
 func (c *Client) ListVolumes(ctx context.Context, opts *ListVolumesOptions) ([]Volume, error) {
-	url := fmt.Sprintf("%s/v3/%s/volumes", c.BlockStorageURL, c.TenantID)
+	url := fmt.Sprintf("%s/%s/volumes", c.BlockStorageURL, c.TenantID)
 	if opts != nil {
 		params := map[string]string{}
 		if opts.Limit > 0 {
@@ -122,7 +122,7 @@ func (c *Client) ListVolumes(ctx context.Context, opts *ListVolumesOptions) ([]V
 
 // ListVolumesDetail lists volumes with full details.
 func (c *Client) ListVolumesDetail(ctx context.Context, opts *ListVolumesOptions) ([]Volume, error) {
-	url := fmt.Sprintf("%s/v3/%s/volumes/detail", c.BlockStorageURL, c.TenantID)
+	url := fmt.Sprintf("%s/%s/volumes/detail", c.BlockStorageURL, c.TenantID)
 	if opts != nil {
 		params := map[string]string{}
 		if opts.Limit > 0 {
@@ -152,7 +152,7 @@ func (c *Client) ListVolumesDetail(ctx context.Context, opts *ListVolumesOptions
 
 // GetVolume gets a volume's details.
 func (c *Client) GetVolume(ctx context.Context, volumeID string) (*Volume, error) {
-	url := fmt.Sprintf("%s/v3/%s/volumes/%s", c.BlockStorageURL, c.TenantID, volumeID)
+	url := fmt.Sprintf("%s/%s/volumes/%s", c.BlockStorageURL, c.TenantID, volumeID)
 	req, err := c.newRequest(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
@@ -166,7 +166,7 @@ func (c *Client) GetVolume(ctx context.Context, volumeID string) (*Volume, error
 
 // CreateVolume creates a new volume.
 func (c *Client) CreateVolume(ctx context.Context, opts CreateVolumeRequest) (*Volume, error) {
-	url := fmt.Sprintf("%s/v3/%s/volumes", c.BlockStorageURL, c.TenantID)
+	url := fmt.Sprintf("%s/%s/volumes", c.BlockStorageURL, c.TenantID)
 	body := map[string]interface{}{"volume": opts}
 	req, err := c.newRequest(ctx, http.MethodPost, url, body)
 	if err != nil {
@@ -181,7 +181,7 @@ func (c *Client) CreateVolume(ctx context.Context, opts CreateVolumeRequest) (*V
 
 // DeleteVolume deletes a volume.
 func (c *Client) DeleteVolume(ctx context.Context, volumeID string, force bool) error {
-	url := fmt.Sprintf("%s/v3/%s/volumes/%s", c.BlockStorageURL, c.TenantID, volumeID)
+	url := fmt.Sprintf("%s/%s/volumes/%s", c.BlockStorageURL, c.TenantID, volumeID)
 	if force {
 		url += "?force=true"
 	}
@@ -195,7 +195,7 @@ func (c *Client) DeleteVolume(ctx context.Context, volumeID string, force bool) 
 
 // UpdateVolume updates a volume's name and description.
 func (c *Client) UpdateVolume(ctx context.Context, volumeID, name string, description *string) (*Volume, error) {
-	url := fmt.Sprintf("%s/v3/%s/volumes/%s", c.BlockStorageURL, c.TenantID, volumeID)
+	url := fmt.Sprintf("%s/%s/volumes/%s", c.BlockStorageURL, c.TenantID, volumeID)
 	volumeBody := map[string]interface{}{"name": name}
 	if description != nil {
 		volumeBody["description"] = *description
@@ -214,7 +214,7 @@ func (c *Client) UpdateVolume(ctx context.Context, volumeID, name string, descri
 
 // SaveVolumeAsImage saves a volume as an image.
 func (c *Client) SaveVolumeAsImage(ctx context.Context, volumeID, imageName string) (*VolumeImageSaveResponse, error) {
-	url := fmt.Sprintf("%s/v3/%s/volumes/%s/action", c.BlockStorageURL, c.TenantID, volumeID)
+	url := fmt.Sprintf("%s/%s/volumes/%s/action", c.BlockStorageURL, c.TenantID, volumeID)
 	body := map[string]interface{}{
 		"os-volume_upload_image": map[string]string{"image_name": imageName},
 	}
@@ -236,7 +236,7 @@ func (c *Client) SaveVolumeAsImage(ctx context.Context, volumeID, imageName stri
 
 // ListVolumeTypes lists available volume types.
 func (c *Client) ListVolumeTypes(ctx context.Context) ([]VolumeType, error) {
-	url := fmt.Sprintf("%s/v3/%s/types", c.BlockStorageURL, c.TenantID)
+	url := fmt.Sprintf("%s/%s/types", c.BlockStorageURL, c.TenantID)
 	req, err := c.newRequest(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
@@ -250,7 +250,7 @@ func (c *Client) ListVolumeTypes(ctx context.Context) ([]VolumeType, error) {
 
 // GetVolumeType gets a volume type's details.
 func (c *Client) GetVolumeType(ctx context.Context, volumeTypeID string) (*VolumeType, error) {
-	url := fmt.Sprintf("%s/v3/%s/types/%s", c.BlockStorageURL, c.TenantID, volumeTypeID)
+	url := fmt.Sprintf("%s/%s/types/%s", c.BlockStorageURL, c.TenantID, volumeTypeID)
 	req, err := c.newRequest(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
@@ -312,7 +312,7 @@ type ListBackupsOptions struct {
 
 // ListBackups lists backups (basic).
 func (c *Client) ListBackups(ctx context.Context, opts *ListBackupsOptions) ([]Backup, error) {
-	url := fmt.Sprintf("%s/v3/%s/backups", c.BlockStorageURL, c.TenantID)
+	url := fmt.Sprintf("%s/%s/backups", c.BlockStorageURL, c.TenantID)
 	if opts != nil {
 		params := map[string]string{}
 		if opts.Limit > 0 {
@@ -339,7 +339,7 @@ func (c *Client) ListBackups(ctx context.Context, opts *ListBackupsOptions) ([]B
 
 // ListBackupsDetail lists backups with full details.
 func (c *Client) ListBackupsDetail(ctx context.Context, opts *ListBackupsOptions) ([]Backup, error) {
-	url := fmt.Sprintf("%s/v3/%s/backups/detail", c.BlockStorageURL, c.TenantID)
+	url := fmt.Sprintf("%s/%s/backups/detail", c.BlockStorageURL, c.TenantID)
 	if opts != nil {
 		params := map[string]string{}
 		if opts.Limit > 0 {
@@ -366,7 +366,7 @@ func (c *Client) ListBackupsDetail(ctx context.Context, opts *ListBackupsOptions
 
 // GetBackup gets a backup's details.
 func (c *Client) GetBackup(ctx context.Context, backupID string) (*Backup, error) {
-	url := fmt.Sprintf("%s/v3/%s/backups/%s", c.BlockStorageURL, c.TenantID, backupID)
+	url := fmt.Sprintf("%s/%s/backups/%s", c.BlockStorageURL, c.TenantID, backupID)
 	req, err := c.newRequest(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
@@ -380,7 +380,7 @@ func (c *Client) GetBackup(ctx context.Context, backupID string) (*Backup, error
 
 // EnableAutoBackup enables auto-backup for a server.
 func (c *Client) EnableAutoBackup(ctx context.Context, serverID string) (*Backup, error) {
-	url := fmt.Sprintf("%s/v3/%s/backups", c.BlockStorageURL, c.TenantID)
+	url := fmt.Sprintf("%s/%s/backups", c.BlockStorageURL, c.TenantID)
 	body := map[string]interface{}{
 		"backup": map[string]string{"instance_uuid": serverID},
 	}
@@ -397,7 +397,7 @@ func (c *Client) EnableAutoBackup(ctx context.Context, serverID string) (*Backup
 
 // DisableAutoBackup disables auto-backup for a server.
 func (c *Client) DisableAutoBackup(ctx context.Context, serverID string) error {
-	url := fmt.Sprintf("%s/v3/%s/backups/%s", c.BlockStorageURL, c.TenantID, serverID)
+	url := fmt.Sprintf("%s/%s/backups/%s", c.BlockStorageURL, c.TenantID, serverID)
 	req, err := c.newRequest(ctx, http.MethodDelete, url, nil)
 	if err != nil {
 		return err
@@ -408,7 +408,7 @@ func (c *Client) DisableAutoBackup(ctx context.Context, serverID string) error {
 
 // RestoreBackup restores a backup to a volume.
 func (c *Client) RestoreBackup(ctx context.Context, backupID, volumeID string) (*BackupRestoreResponse, error) {
-	url := fmt.Sprintf("%s/v3/%s/backups/%s/restore", c.BlockStorageURL, c.TenantID, backupID)
+	url := fmt.Sprintf("%s/%s/backups/%s/restore", c.BlockStorageURL, c.TenantID, backupID)
 	body := map[string]interface{}{
 		"restore": map[string]string{"volume_id": volumeID},
 	}

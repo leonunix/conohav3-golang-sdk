@@ -46,7 +46,7 @@ type qosPolicyResponse struct {
 
 // ListQoSPolicies lists all QoS policies.
 func (c *Client) ListQoSPolicies(ctx context.Context) ([]QoSPolicy, error) {
-	url := c.NetworkingURL + "/v2.0/qos/policies"
+	url := c.NetworkingURL + "/qos/policies"
 	req, err := c.newRequest(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
@@ -60,7 +60,7 @@ func (c *Client) ListQoSPolicies(ctx context.Context) ([]QoSPolicy, error) {
 
 // GetQoSPolicy gets a QoS policy's details.
 func (c *Client) GetQoSPolicy(ctx context.Context, policyID string) (*QoSPolicy, error) {
-	url := fmt.Sprintf("%s/v2.0/qos/policies/%s", c.NetworkingURL, policyID)
+	url := fmt.Sprintf("%s/qos/policies/%s", c.NetworkingURL, policyID)
 	req, err := c.newRequest(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
@@ -110,7 +110,7 @@ type subnetResponse struct {
 
 // ListSubnets lists all subnets.
 func (c *Client) ListSubnets(ctx context.Context) ([]Subnet, error) {
-	url := c.NetworkingURL + "/v2.0/subnets"
+	url := c.NetworkingURL + "/subnets"
 	req, err := c.newRequest(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
@@ -124,7 +124,7 @@ func (c *Client) ListSubnets(ctx context.Context) ([]Subnet, error) {
 
 // GetSubnet gets a subnet's details.
 func (c *Client) GetSubnet(ctx context.Context, subnetID string) (*Subnet, error) {
-	url := fmt.Sprintf("%s/v2.0/subnets/%s", c.NetworkingURL, subnetID)
+	url := fmt.Sprintf("%s/subnets/%s", c.NetworkingURL, subnetID)
 	req, err := c.newRequest(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
@@ -138,7 +138,7 @@ func (c *Client) GetSubnet(ctx context.Context, subnetID string) (*Subnet, error
 
 // CreateSubnet creates a subnet on a local network.
 func (c *Client) CreateSubnet(ctx context.Context, networkID, cidr string) (*Subnet, error) {
-	url := c.NetworkingURL + "/v2.0/subnets"
+	url := c.NetworkingURL + "/subnets"
 	body := map[string]interface{}{
 		"subnet": map[string]string{
 			"network_id": networkID,
@@ -158,7 +158,7 @@ func (c *Client) CreateSubnet(ctx context.Context, networkID, cidr string) (*Sub
 
 // DeleteSubnet deletes a subnet.
 func (c *Client) DeleteSubnet(ctx context.Context, subnetID string) error {
-	url := fmt.Sprintf("%s/v2.0/subnets/%s", c.NetworkingURL, subnetID)
+	url := fmt.Sprintf("%s/subnets/%s", c.NetworkingURL, subnetID)
 	req, err := c.newRequest(ctx, http.MethodDelete, url, nil)
 	if err != nil {
 		return err
@@ -227,7 +227,7 @@ type securityGroupRuleResponse struct {
 
 // ListSecurityGroups lists all security groups.
 func (c *Client) ListSecurityGroups(ctx context.Context) ([]SecurityGroup, error) {
-	url := c.NetworkingURL + "/v2.0/security-groups"
+	url := c.NetworkingURL + "/security-groups"
 	req, err := c.newRequest(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
@@ -241,7 +241,7 @@ func (c *Client) ListSecurityGroups(ctx context.Context) ([]SecurityGroup, error
 
 // GetSecurityGroup gets a security group's details.
 func (c *Client) GetSecurityGroup(ctx context.Context, sgID string) (*SecurityGroup, error) {
-	url := fmt.Sprintf("%s/v2.0/security-groups/%s", c.NetworkingURL, sgID)
+	url := fmt.Sprintf("%s/security-groups/%s", c.NetworkingURL, sgID)
 	req, err := c.newRequest(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
@@ -255,7 +255,7 @@ func (c *Client) GetSecurityGroup(ctx context.Context, sgID string) (*SecurityGr
 
 // CreateSecurityGroup creates a security group.
 func (c *Client) CreateSecurityGroup(ctx context.Context, name, description string) (*SecurityGroup, error) {
-	url := c.NetworkingURL + "/v2.0/security-groups"
+	url := c.NetworkingURL + "/security-groups"
 	body := map[string]interface{}{
 		"security_group": map[string]string{
 			"name":        name,
@@ -275,7 +275,7 @@ func (c *Client) CreateSecurityGroup(ctx context.Context, name, description stri
 
 // UpdateSecurityGroup updates a security group.
 func (c *Client) UpdateSecurityGroup(ctx context.Context, sgID, name, description string) (*SecurityGroup, error) {
-	url := fmt.Sprintf("%s/v2.0/security-groups/%s", c.NetworkingURL, sgID)
+	url := fmt.Sprintf("%s/security-groups/%s", c.NetworkingURL, sgID)
 	sgBody := map[string]string{}
 	if name != "" {
 		sgBody["name"] = name
@@ -297,7 +297,7 @@ func (c *Client) UpdateSecurityGroup(ctx context.Context, sgID, name, descriptio
 
 // DeleteSecurityGroup deletes a security group.
 func (c *Client) DeleteSecurityGroup(ctx context.Context, sgID string) error {
-	url := fmt.Sprintf("%s/v2.0/security-groups/%s", c.NetworkingURL, sgID)
+	url := fmt.Sprintf("%s/security-groups/%s", c.NetworkingURL, sgID)
 	req, err := c.newRequest(ctx, http.MethodDelete, url, nil)
 	if err != nil {
 		return err
@@ -308,7 +308,7 @@ func (c *Client) DeleteSecurityGroup(ctx context.Context, sgID string) error {
 
 // ListSecurityGroupRules lists all security group rules.
 func (c *Client) ListSecurityGroupRules(ctx context.Context) ([]SecurityGroupRule, error) {
-	url := c.NetworkingURL + "/v2.0/security-group-rules"
+	url := c.NetworkingURL + "/security-group-rules"
 	req, err := c.newRequest(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
@@ -322,7 +322,7 @@ func (c *Client) ListSecurityGroupRules(ctx context.Context) ([]SecurityGroupRul
 
 // GetSecurityGroupRule gets a security group rule's details.
 func (c *Client) GetSecurityGroupRule(ctx context.Context, ruleID string) (*SecurityGroupRule, error) {
-	url := fmt.Sprintf("%s/v2.0/security-group-rules/%s", c.NetworkingURL, ruleID)
+	url := fmt.Sprintf("%s/security-group-rules/%s", c.NetworkingURL, ruleID)
 	req, err := c.newRequest(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
@@ -336,7 +336,7 @@ func (c *Client) GetSecurityGroupRule(ctx context.Context, ruleID string) (*Secu
 
 // CreateSecurityGroupRule creates a security group rule.
 func (c *Client) CreateSecurityGroupRule(ctx context.Context, opts CreateSecurityGroupRuleRequest) (*SecurityGroupRule, error) {
-	url := c.NetworkingURL + "/v2.0/security-group-rules"
+	url := c.NetworkingURL + "/security-group-rules"
 	body := map[string]interface{}{"security_group_rule": opts}
 	req, err := c.newRequest(ctx, http.MethodPost, url, body)
 	if err != nil {
@@ -351,7 +351,7 @@ func (c *Client) CreateSecurityGroupRule(ctx context.Context, opts CreateSecurit
 
 // DeleteSecurityGroupRule deletes a security group rule.
 func (c *Client) DeleteSecurityGroupRule(ctx context.Context, ruleID string) error {
-	url := fmt.Sprintf("%s/v2.0/security-group-rules/%s", c.NetworkingURL, ruleID)
+	url := fmt.Sprintf("%s/security-group-rules/%s", c.NetworkingURL, ruleID)
 	req, err := c.newRequest(ctx, http.MethodDelete, url, nil)
 	if err != nil {
 		return err
@@ -388,7 +388,7 @@ type networkResponse struct {
 
 // ListNetworks lists all networks.
 func (c *Client) ListNetworks(ctx context.Context) ([]Network, error) {
-	url := c.NetworkingURL + "/v2.0/networks"
+	url := c.NetworkingURL + "/networks"
 	req, err := c.newRequest(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
@@ -402,7 +402,7 @@ func (c *Client) ListNetworks(ctx context.Context) ([]Network, error) {
 
 // GetNetwork gets a network's details.
 func (c *Client) GetNetwork(ctx context.Context, networkID string) (*Network, error) {
-	url := fmt.Sprintf("%s/v2.0/networks/%s", c.NetworkingURL, networkID)
+	url := fmt.Sprintf("%s/networks/%s", c.NetworkingURL, networkID)
 	req, err := c.newRequest(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
@@ -416,7 +416,7 @@ func (c *Client) GetNetwork(ctx context.Context, networkID string) (*Network, er
 
 // CreateNetwork creates a local network.
 func (c *Client) CreateNetwork(ctx context.Context) (*Network, error) {
-	url := c.NetworkingURL + "/v2.0/networks"
+	url := c.NetworkingURL + "/networks"
 	req, err := c.newRequest(ctx, http.MethodPost, url, nil)
 	if err != nil {
 		return nil, err
@@ -430,7 +430,7 @@ func (c *Client) CreateNetwork(ctx context.Context) (*Network, error) {
 
 // DeleteNetwork deletes a local network.
 func (c *Client) DeleteNetwork(ctx context.Context, networkID string) error {
-	url := fmt.Sprintf("%s/v2.0/networks/%s", c.NetworkingURL, networkID)
+	url := fmt.Sprintf("%s/networks/%s", c.NetworkingURL, networkID)
 	req, err := c.newRequest(ctx, http.MethodDelete, url, nil)
 	if err != nil {
 		return err
@@ -500,7 +500,7 @@ type portResponse struct {
 
 // ListPorts lists all ports.
 func (c *Client) ListPorts(ctx context.Context) ([]Port, error) {
-	url := c.NetworkingURL + "/v2.0/ports"
+	url := c.NetworkingURL + "/ports"
 	req, err := c.newRequest(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
@@ -514,7 +514,7 @@ func (c *Client) ListPorts(ctx context.Context) ([]Port, error) {
 
 // GetPort gets a port's details.
 func (c *Client) GetPort(ctx context.Context, portID string) (*Port, error) {
-	url := fmt.Sprintf("%s/v2.0/ports/%s", c.NetworkingURL, portID)
+	url := fmt.Sprintf("%s/ports/%s", c.NetworkingURL, portID)
 	req, err := c.newRequest(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
@@ -528,7 +528,7 @@ func (c *Client) GetPort(ctx context.Context, portID string) (*Port, error) {
 
 // CreatePort creates a port on a local network.
 func (c *Client) CreatePort(ctx context.Context, opts CreatePortRequest) (*Port, error) {
-	url := c.NetworkingURL + "/v2.0/ports"
+	url := c.NetworkingURL + "/ports"
 	body := map[string]interface{}{"port": opts}
 	req, err := c.newRequest(ctx, http.MethodPost, url, body)
 	if err != nil {
@@ -543,7 +543,7 @@ func (c *Client) CreatePort(ctx context.Context, opts CreatePortRequest) (*Port,
 
 // AllocateAdditionalIP allocates additional public IP addresses.
 func (c *Client) AllocateAdditionalIP(ctx context.Context, count int, securityGroups []string) (*Port, error) {
-	url := c.NetworkingURL + "/v2.0/allocateips"
+	url := c.NetworkingURL + "/allocateips"
 	body := map[string]interface{}{
 		"allocateip": AllocateIPRequest{
 			Count:          count,
@@ -563,7 +563,7 @@ func (c *Client) AllocateAdditionalIP(ctx context.Context, count int, securityGr
 
 // UpdatePort updates a port.
 func (c *Client) UpdatePort(ctx context.Context, portID string, opts UpdatePortRequest) (*Port, error) {
-	url := fmt.Sprintf("%s/v2.0/ports/%s", c.NetworkingURL, portID)
+	url := fmt.Sprintf("%s/ports/%s", c.NetworkingURL, portID)
 	body := map[string]interface{}{"port": opts}
 	req, err := c.newRequest(ctx, http.MethodPut, url, body)
 	if err != nil {
@@ -578,7 +578,7 @@ func (c *Client) UpdatePort(ctx context.Context, portID string, opts UpdatePortR
 
 // DeletePort deletes a port.
 func (c *Client) DeletePort(ctx context.Context, portID string) error {
-	url := fmt.Sprintf("%s/v2.0/ports/%s", c.NetworkingURL, portID)
+	url := fmt.Sprintf("%s/ports/%s", c.NetworkingURL, portID)
 	req, err := c.newRequest(ctx, http.MethodDelete, url, nil)
 	if err != nil {
 		return err

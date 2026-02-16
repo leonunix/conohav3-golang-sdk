@@ -147,7 +147,7 @@ func (c *Client) AuthenticateByName(ctx context.Context, userName, password, ten
 }
 
 func (c *Client) authenticate(ctx context.Context, authReq *AuthRequest, tenantID string) (*Token, error) {
-	url := c.IdentityURL + "/v3/auth/tokens"
+	url := c.IdentityURL + "/auth/tokens"
 	httpReq, err := c.newRequest(ctx, http.MethodPost, url, authReq)
 	if err != nil {
 		return nil, err
@@ -201,7 +201,7 @@ type credentialResponse struct {
 
 // ListCredentials lists all credentials for a user.
 func (c *Client) ListCredentials(ctx context.Context, userID string) ([]Credential, error) {
-	url := fmt.Sprintf("%s/v3/users/%s/credentials/OS-EC2", c.IdentityURL, userID)
+	url := fmt.Sprintf("%s/users/%s/credentials/OS-EC2", c.IdentityURL, userID)
 	req, err := c.newRequest(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
@@ -215,7 +215,7 @@ func (c *Client) ListCredentials(ctx context.Context, userID string) ([]Credenti
 
 // CreateCredential creates a new credential for a user.
 func (c *Client) CreateCredential(ctx context.Context, userID, tenantID string) (*Credential, error) {
-	url := fmt.Sprintf("%s/v3/users/%s/credentials/OS-EC2", c.IdentityURL, userID)
+	url := fmt.Sprintf("%s/users/%s/credentials/OS-EC2", c.IdentityURL, userID)
 	body := map[string]string{"tenant_id": tenantID}
 	req, err := c.newRequest(ctx, http.MethodPost, url, body)
 	if err != nil {
@@ -230,7 +230,7 @@ func (c *Client) CreateCredential(ctx context.Context, userID, tenantID string) 
 
 // GetCredential gets a credential detail.
 func (c *Client) GetCredential(ctx context.Context, userID, credentialID string) (*Credential, error) {
-	url := fmt.Sprintf("%s/v3/users/%s/credentials/OS-EC2/%s", c.IdentityURL, userID, credentialID)
+	url := fmt.Sprintf("%s/users/%s/credentials/OS-EC2/%s", c.IdentityURL, userID, credentialID)
 	req, err := c.newRequest(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
@@ -244,7 +244,7 @@ func (c *Client) GetCredential(ctx context.Context, userID, credentialID string)
 
 // DeleteCredential deletes a credential.
 func (c *Client) DeleteCredential(ctx context.Context, userID, credentialID string) error {
-	url := fmt.Sprintf("%s/v3/users/%s/credentials/OS-EC2/%s", c.IdentityURL, userID, credentialID)
+	url := fmt.Sprintf("%s/users/%s/credentials/OS-EC2/%s", c.IdentityURL, userID, credentialID)
 	req, err := c.newRequest(ctx, http.MethodDelete, url, nil)
 	if err != nil {
 		return err
@@ -286,7 +286,7 @@ type CreateSubUserRequest struct {
 
 // ListSubUsers lists all sub-users.
 func (c *Client) ListSubUsers(ctx context.Context) ([]SubUser, error) {
-	url := c.IdentityURL + "/v3/sub-users"
+	url := c.IdentityURL + "/sub-users"
 	req, err := c.newRequest(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
@@ -300,7 +300,7 @@ func (c *Client) ListSubUsers(ctx context.Context) ([]SubUser, error) {
 
 // CreateSubUser creates a new sub-user.
 func (c *Client) CreateSubUser(ctx context.Context, password string, roles []string) (*SubUser, error) {
-	url := c.IdentityURL + "/v3/sub-users"
+	url := c.IdentityURL + "/sub-users"
 	body := map[string]interface{}{
 		"user": CreateSubUserRequest{
 			Password: password,
@@ -320,7 +320,7 @@ func (c *Client) CreateSubUser(ctx context.Context, password string, roles []str
 
 // GetSubUser gets a sub-user detail.
 func (c *Client) GetSubUser(ctx context.Context, subUserID string) (*SubUser, error) {
-	url := fmt.Sprintf("%s/v3/sub-users/%s", c.IdentityURL, subUserID)
+	url := fmt.Sprintf("%s/sub-users/%s", c.IdentityURL, subUserID)
 	req, err := c.newRequest(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
@@ -334,7 +334,7 @@ func (c *Client) GetSubUser(ctx context.Context, subUserID string) (*SubUser, er
 
 // UpdateSubUser updates a sub-user's password.
 func (c *Client) UpdateSubUser(ctx context.Context, subUserID, password string) (*SubUser, error) {
-	url := fmt.Sprintf("%s/v3/sub-users/%s", c.IdentityURL, subUserID)
+	url := fmt.Sprintf("%s/sub-users/%s", c.IdentityURL, subUserID)
 	body := map[string]interface{}{
 		"user": map[string]string{"password": password},
 	}
@@ -351,7 +351,7 @@ func (c *Client) UpdateSubUser(ctx context.Context, subUserID, password string) 
 
 // DeleteSubUser deletes a sub-user.
 func (c *Client) DeleteSubUser(ctx context.Context, subUserID string) error {
-	url := fmt.Sprintf("%s/v3/sub-users/%s", c.IdentityURL, subUserID)
+	url := fmt.Sprintf("%s/sub-users/%s", c.IdentityURL, subUserID)
 	req, err := c.newRequest(ctx, http.MethodDelete, url, nil)
 	if err != nil {
 		return err
@@ -362,7 +362,7 @@ func (c *Client) DeleteSubUser(ctx context.Context, subUserID string) error {
 
 // AssignRolesToSubUser assigns roles to a sub-user.
 func (c *Client) AssignRolesToSubUser(ctx context.Context, subUserID string, roleIDs []string) (*SubUser, error) {
-	url := fmt.Sprintf("%s/v3/sub-users/%s/assign", c.IdentityURL, subUserID)
+	url := fmt.Sprintf("%s/sub-users/%s/assign", c.IdentityURL, subUserID)
 	body := map[string]interface{}{"roles": roleIDs}
 	req, err := c.newRequest(ctx, http.MethodPost, url, body)
 	if err != nil {
@@ -377,7 +377,7 @@ func (c *Client) AssignRolesToSubUser(ctx context.Context, subUserID string, rol
 
 // UnassignRolesFromSubUser removes roles from a sub-user.
 func (c *Client) UnassignRolesFromSubUser(ctx context.Context, subUserID string, roleIDs []string) (*SubUser, error) {
-	url := fmt.Sprintf("%s/v3/sub-users/%s/unassign", c.IdentityURL, subUserID)
+	url := fmt.Sprintf("%s/sub-users/%s/unassign", c.IdentityURL, subUserID)
 	body := map[string]interface{}{"roles": roleIDs}
 	req, err := c.newRequest(ctx, http.MethodPost, url, body)
 	if err != nil {
@@ -412,7 +412,7 @@ type roleDetailResponse struct {
 
 // ListRoles lists all roles.
 func (c *Client) ListRoles(ctx context.Context) ([]RoleDetail, error) {
-	url := c.IdentityURL + "/v3/sub-users/roles"
+	url := c.IdentityURL + "/sub-users/roles"
 	req, err := c.newRequest(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
@@ -426,7 +426,7 @@ func (c *Client) ListRoles(ctx context.Context) ([]RoleDetail, error) {
 
 // CreateRole creates a new role with permissions.
 func (c *Client) CreateRole(ctx context.Context, name string, permissions []string) (*RoleDetail, error) {
-	url := c.IdentityURL + "/v3/sub-users/roles"
+	url := c.IdentityURL + "/sub-users/roles"
 	body := map[string]interface{}{
 		"role": map[string]interface{}{
 			"name":        name,
@@ -446,7 +446,7 @@ func (c *Client) CreateRole(ctx context.Context, name string, permissions []stri
 
 // GetRole gets a role detail.
 func (c *Client) GetRole(ctx context.Context, roleID string) (*RoleDetail, error) {
-	url := fmt.Sprintf("%s/v3/sub-users/roles/%s", c.IdentityURL, roleID)
+	url := fmt.Sprintf("%s/sub-users/roles/%s", c.IdentityURL, roleID)
 	req, err := c.newRequest(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
@@ -460,7 +460,7 @@ func (c *Client) GetRole(ctx context.Context, roleID string) (*RoleDetail, error
 
 // UpdateRole updates a role's name.
 func (c *Client) UpdateRole(ctx context.Context, roleID, name string) (*RoleDetail, error) {
-	url := fmt.Sprintf("%s/v3/sub-users/roles/%s", c.IdentityURL, roleID)
+	url := fmt.Sprintf("%s/sub-users/roles/%s", c.IdentityURL, roleID)
 	body := map[string]interface{}{
 		"role": map[string]string{"name": name},
 	}
@@ -477,7 +477,7 @@ func (c *Client) UpdateRole(ctx context.Context, roleID, name string) (*RoleDeta
 
 // DeleteRole deletes a role.
 func (c *Client) DeleteRole(ctx context.Context, roleID string) error {
-	url := fmt.Sprintf("%s/v3/sub-users/roles/%s", c.IdentityURL, roleID)
+	url := fmt.Sprintf("%s/sub-users/roles/%s", c.IdentityURL, roleID)
 	req, err := c.newRequest(ctx, http.MethodDelete, url, nil)
 	if err != nil {
 		return err
@@ -496,7 +496,7 @@ type permissionsResponse struct {
 
 // ListPermissions lists all available permissions.
 func (c *Client) ListPermissions(ctx context.Context) ([]string, error) {
-	url := c.IdentityURL + "/v3/permissions"
+	url := c.IdentityURL + "/permissions"
 	req, err := c.newRequest(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
@@ -510,7 +510,7 @@ func (c *Client) ListPermissions(ctx context.Context) ([]string, error) {
 
 // AssignPermissionsToRole assigns permissions to a role.
 func (c *Client) AssignPermissionsToRole(ctx context.Context, roleID string, permissions []string) (*RoleDetail, error) {
-	url := fmt.Sprintf("%s/v3/sub-users/roles/%s/assign", c.IdentityURL, roleID)
+	url := fmt.Sprintf("%s/sub-users/roles/%s/assign", c.IdentityURL, roleID)
 	body := map[string]interface{}{"permissions": permissions}
 	req, err := c.newRequest(ctx, http.MethodPost, url, body)
 	if err != nil {
@@ -525,7 +525,7 @@ func (c *Client) AssignPermissionsToRole(ctx context.Context, roleID string, per
 
 // UnassignPermissionsFromRole removes permissions from a role.
 func (c *Client) UnassignPermissionsFromRole(ctx context.Context, roleID string, permissions []string) (*RoleDetail, error) {
-	url := fmt.Sprintf("%s/v3/sub-users/roles/%s/unassign", c.IdentityURL, roleID)
+	url := fmt.Sprintf("%s/sub-users/roles/%s/unassign", c.IdentityURL, roleID)
 	body := map[string]interface{}{"permissions": permissions}
 	req, err := c.newRequest(ctx, http.MethodPost, url, body)
 	if err != nil {

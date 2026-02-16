@@ -102,7 +102,7 @@ type ListDNSRecordsOptions struct {
 
 // ListDomains lists all DNS domains.
 func (c *Client) ListDomains(ctx context.Context, opts *ListDomainsOptions) ([]Domain, error) {
-	url := c.DNSServiceURL + "/v1/domains"
+	url := c.DNSServiceURL + "/domains"
 	if opts != nil {
 		params := map[string]string{}
 		if opts.Limit > 0 {
@@ -132,7 +132,7 @@ func (c *Client) ListDomains(ctx context.Context, opts *ListDomainsOptions) ([]D
 
 // GetDomain gets a domain's details.
 func (c *Client) GetDomain(ctx context.Context, domainID string) (*Domain, error) {
-	url := fmt.Sprintf("%s/v1/domains/%s", c.DNSServiceURL, domainID)
+	url := fmt.Sprintf("%s/domains/%s", c.DNSServiceURL, domainID)
 	req, err := c.newRequest(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
@@ -147,7 +147,7 @@ func (c *Client) GetDomain(ctx context.Context, domainID string) (*Domain, error
 // CreateDomain creates a new DNS domain.
 // Domain name must end with a trailing period (e.g., "example.com.").
 func (c *Client) CreateDomain(ctx context.Context, opts CreateDomainRequest) (*Domain, error) {
-	url := c.DNSServiceURL + "/v1/domains"
+	url := c.DNSServiceURL + "/domains"
 	req, err := c.newRequest(ctx, http.MethodPost, url, opts)
 	if err != nil {
 		return nil, err
@@ -161,7 +161,7 @@ func (c *Client) CreateDomain(ctx context.Context, opts CreateDomainRequest) (*D
 
 // UpdateDomain updates a domain's TTL and email.
 func (c *Client) UpdateDomain(ctx context.Context, domainID string, opts UpdateDomainRequest) (*Domain, error) {
-	url := fmt.Sprintf("%s/v1/domains/%s", c.DNSServiceURL, domainID)
+	url := fmt.Sprintf("%s/domains/%s", c.DNSServiceURL, domainID)
 	req, err := c.newRequest(ctx, http.MethodPut, url, opts)
 	if err != nil {
 		return nil, err
@@ -175,7 +175,7 @@ func (c *Client) UpdateDomain(ctx context.Context, domainID string, opts UpdateD
 
 // DeleteDomain deletes a DNS domain.
 func (c *Client) DeleteDomain(ctx context.Context, domainID string) error {
-	url := fmt.Sprintf("%s/v1/domains/%s", c.DNSServiceURL, domainID)
+	url := fmt.Sprintf("%s/domains/%s", c.DNSServiceURL, domainID)
 	req, err := c.newRequest(ctx, http.MethodDelete, url, nil)
 	if err != nil {
 		return err
@@ -190,7 +190,7 @@ func (c *Client) DeleteDomain(ctx context.Context, domainID string) error {
 
 // ListDNSRecords lists all DNS records for a domain.
 func (c *Client) ListDNSRecords(ctx context.Context, domainID string, opts *ListDNSRecordsOptions) ([]DNSRecord, error) {
-	url := fmt.Sprintf("%s/v1/domains/%s/records", c.DNSServiceURL, domainID)
+	url := fmt.Sprintf("%s/domains/%s/records", c.DNSServiceURL, domainID)
 	if opts != nil {
 		params := map[string]string{}
 		if opts.Limit > 0 {
@@ -220,7 +220,7 @@ func (c *Client) ListDNSRecords(ctx context.Context, domainID string, opts *List
 
 // GetDNSRecord gets a DNS record's details.
 func (c *Client) GetDNSRecord(ctx context.Context, domainID, recordID string) (*DNSRecord, error) {
-	url := fmt.Sprintf("%s/v1/domains/%s/records/%s", c.DNSServiceURL, domainID, recordID)
+	url := fmt.Sprintf("%s/domains/%s/records/%s", c.DNSServiceURL, domainID, recordID)
 	req, err := c.newRequest(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
@@ -235,7 +235,7 @@ func (c *Client) GetDNSRecord(ctx context.Context, domainID, recordID string) (*
 // CreateDNSRecord creates a new DNS record.
 // Record name must end with a trailing period (e.g., "www.example.com.").
 func (c *Client) CreateDNSRecord(ctx context.Context, domainID string, opts CreateDNSRecordRequest) (*DNSRecord, error) {
-	url := fmt.Sprintf("%s/v1/domains/%s/records", c.DNSServiceURL, domainID)
+	url := fmt.Sprintf("%s/domains/%s/records", c.DNSServiceURL, domainID)
 	req, err := c.newRequest(ctx, http.MethodPost, url, opts)
 	if err != nil {
 		return nil, err
@@ -249,7 +249,7 @@ func (c *Client) CreateDNSRecord(ctx context.Context, domainID string, opts Crea
 
 // UpdateDNSRecord updates a DNS record.
 func (c *Client) UpdateDNSRecord(ctx context.Context, domainID, recordID string, opts UpdateDNSRecordRequest) (*DNSRecord, error) {
-	url := fmt.Sprintf("%s/v1/domains/%s/records/%s", c.DNSServiceURL, domainID, recordID)
+	url := fmt.Sprintf("%s/domains/%s/records/%s", c.DNSServiceURL, domainID, recordID)
 	req, err := c.newRequest(ctx, http.MethodPut, url, opts)
 	if err != nil {
 		return nil, err
@@ -263,7 +263,7 @@ func (c *Client) UpdateDNSRecord(ctx context.Context, domainID, recordID string,
 
 // DeleteDNSRecord deletes a DNS record.
 func (c *Client) DeleteDNSRecord(ctx context.Context, domainID, recordID string) error {
-	url := fmt.Sprintf("%s/v1/domains/%s/records/%s", c.DNSServiceURL, domainID, recordID)
+	url := fmt.Sprintf("%s/domains/%s/records/%s", c.DNSServiceURL, domainID, recordID)
 	req, err := c.newRequest(ctx, http.MethodDelete, url, nil)
 	if err != nil {
 		return err

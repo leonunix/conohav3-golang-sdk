@@ -149,7 +149,7 @@ type remoteConsoleResponse struct {
 
 // ListServers lists servers (basic).
 func (c *Client) ListServers(ctx context.Context) ([]Server, error) {
-	url := c.ComputeURL + "/v2.1/servers"
+	url := c.ComputeURL + "/servers"
 	req, err := c.newRequest(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
@@ -163,7 +163,7 @@ func (c *Client) ListServers(ctx context.Context) ([]Server, error) {
 
 // ListServersDetail lists servers with full details.
 func (c *Client) ListServersDetail(ctx context.Context) ([]ServerDetail, error) {
-	url := c.ComputeURL + "/v2.1/servers/detail"
+	url := c.ComputeURL + "/servers/detail"
 	req, err := c.newRequest(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
@@ -177,7 +177,7 @@ func (c *Client) ListServersDetail(ctx context.Context) ([]ServerDetail, error) 
 
 // GetServer gets a server's details.
 func (c *Client) GetServer(ctx context.Context, serverID string) (*ServerDetail, error) {
-	url := fmt.Sprintf("%s/v2.1/servers/%s", c.ComputeURL, serverID)
+	url := fmt.Sprintf("%s/servers/%s", c.ComputeURL, serverID)
 	req, err := c.newRequest(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
@@ -191,7 +191,7 @@ func (c *Client) GetServer(ctx context.Context, serverID string) (*ServerDetail,
 
 // CreateServer creates a new server.
 func (c *Client) CreateServer(ctx context.Context, opts CreateServerRequest) (*CreateServerResponse, error) {
-	url := c.ComputeURL + "/v2.1/servers"
+	url := c.ComputeURL + "/servers"
 	body := map[string]interface{}{"server": opts}
 	req, err := c.newRequest(ctx, http.MethodPost, url, body)
 	if err != nil {
@@ -206,7 +206,7 @@ func (c *Client) CreateServer(ctx context.Context, opts CreateServerRequest) (*C
 
 // DeleteServer deletes a server.
 func (c *Client) DeleteServer(ctx context.Context, serverID string) error {
-	url := fmt.Sprintf("%s/v2.1/servers/%s", c.ComputeURL, serverID)
+	url := fmt.Sprintf("%s/servers/%s", c.ComputeURL, serverID)
 	req, err := c.newRequest(ctx, http.MethodDelete, url, nil)
 	if err != nil {
 		return err
@@ -220,7 +220,7 @@ func (c *Client) DeleteServer(ctx context.Context, serverID string) error {
 // ------------------------------------------------------------
 
 func (c *Client) serverAction(ctx context.Context, serverID string, body interface{}) error {
-	url := fmt.Sprintf("%s/v2.1/servers/%s/action", c.ComputeURL, serverID)
+	url := fmt.Sprintf("%s/servers/%s/action", c.ComputeURL, serverID)
 	req, err := c.newRequest(ctx, http.MethodPost, url, body)
 	if err != nil {
 		return err
@@ -292,7 +292,7 @@ func (c *Client) SetStorageController(ctx context.Context, serverID, bus string)
 
 // MountISO mounts an ISO image (enters rescue mode).
 func (c *Client) MountISO(ctx context.Context, serverID, imageRef string) (string, error) {
-	url := fmt.Sprintf("%s/v2.1/servers/%s/action", c.ComputeURL, serverID)
+	url := fmt.Sprintf("%s/servers/%s/action", c.ComputeURL, serverID)
 	body := map[string]interface{}{
 		"rescue": map[string]string{"rescue_image_ref": imageRef},
 	}
@@ -322,7 +322,7 @@ type addressesResponse struct {
 
 // GetServerAddresses gets all IP addresses of a server.
 func (c *Client) GetServerAddresses(ctx context.Context, serverID string) (map[string][]Address, error) {
-	url := fmt.Sprintf("%s/v2.1/servers/%s/ips", c.ComputeURL, serverID)
+	url := fmt.Sprintf("%s/servers/%s/ips", c.ComputeURL, serverID)
 	req, err := c.newRequest(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
@@ -336,7 +336,7 @@ func (c *Client) GetServerAddresses(ctx context.Context, serverID string) (map[s
 
 // GetServerAddressesByNetwork gets IP addresses of a server for a specific network.
 func (c *Client) GetServerAddressesByNetwork(ctx context.Context, serverID, networkName string) ([]Address, error) {
-	url := fmt.Sprintf("%s/v2.1/servers/%s/ips/%s", c.ComputeURL, serverID, networkName)
+	url := fmt.Sprintf("%s/servers/%s/ips/%s", c.ComputeURL, serverID, networkName)
 	req, err := c.newRequest(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
@@ -378,7 +378,7 @@ type serverSecurityGroupsResponse struct {
 
 // GetServerSecurityGroups gets security groups of a server.
 func (c *Client) GetServerSecurityGroups(ctx context.Context, serverID string) ([]ServerSecurityGroup, error) {
-	url := fmt.Sprintf("%s/v2.1/servers/%s/os-security-groups", c.ComputeURL, serverID)
+	url := fmt.Sprintf("%s/servers/%s/os-security-groups", c.ComputeURL, serverID)
 	req, err := c.newRequest(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
@@ -396,7 +396,7 @@ func (c *Client) GetServerSecurityGroups(ctx context.Context, serverID string) (
 
 // GetConsoleURL gets a remote console URL for a server.
 func (c *Client) GetConsoleURL(ctx context.Context, serverID string, opts RemoteConsoleRequest) (*RemoteConsole, error) {
-	url := fmt.Sprintf("%s/v2.1/servers/%s/remote-consoles", c.ComputeURL, serverID)
+	url := fmt.Sprintf("%s/servers/%s/remote-consoles", c.ComputeURL, serverID)
 	body := map[string]interface{}{"remote_console": opts}
 	req, err := c.newRequest(ctx, http.MethodPost, url, body)
 	if err != nil {
@@ -431,7 +431,7 @@ type metadataResponse struct {
 
 // GetServerMetadata gets a server's metadata.
 func (c *Client) GetServerMetadata(ctx context.Context, serverID string) (map[string]string, error) {
-	url := fmt.Sprintf("%s/v2.1/servers/%s/metadata", c.ComputeURL, serverID)
+	url := fmt.Sprintf("%s/servers/%s/metadata", c.ComputeURL, serverID)
 	req, err := c.newRequest(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
@@ -445,7 +445,7 @@ func (c *Client) GetServerMetadata(ctx context.Context, serverID string) (map[st
 
 // UpdateServerMetadata updates a server's metadata.
 func (c *Client) UpdateServerMetadata(ctx context.Context, serverID string, metadata map[string]string) (map[string]string, error) {
-	url := fmt.Sprintf("%s/v2.1/servers/%s/metadata", c.ComputeURL, serverID)
+	url := fmt.Sprintf("%s/servers/%s/metadata", c.ComputeURL, serverID)
 	body := map[string]interface{}{"metadata": metadata}
 	req, err := c.newRequest(ctx, http.MethodPost, url, body)
 	if err != nil {
@@ -498,7 +498,7 @@ type flavorDetailResponse struct {
 
 // ListFlavors lists available flavors (basic).
 func (c *Client) ListFlavors(ctx context.Context) ([]Flavor, error) {
-	url := c.ComputeURL + "/v2.1/flavors"
+	url := c.ComputeURL + "/flavors"
 	req, err := c.newRequest(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
@@ -512,7 +512,7 @@ func (c *Client) ListFlavors(ctx context.Context) ([]Flavor, error) {
 
 // ListFlavorsDetail lists available flavors with full details.
 func (c *Client) ListFlavorsDetail(ctx context.Context) ([]FlavorDetail, error) {
-	url := c.ComputeURL + "/v2.1/flavors/detail"
+	url := c.ComputeURL + "/flavors/detail"
 	req, err := c.newRequest(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
@@ -526,7 +526,7 @@ func (c *Client) ListFlavorsDetail(ctx context.Context) ([]FlavorDetail, error) 
 
 // GetFlavor gets a flavor's details.
 func (c *Client) GetFlavor(ctx context.Context, flavorID string) (*FlavorDetail, error) {
-	url := fmt.Sprintf("%s/v2.1/flavors/%s", c.ComputeURL, flavorID)
+	url := fmt.Sprintf("%s/flavors/%s", c.ComputeURL, flavorID)
 	req, err := c.newRequest(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
@@ -576,7 +576,7 @@ type ListKeypairsOptions struct {
 
 // ListKeypairs lists SSH keypairs.
 func (c *Client) ListKeypairs(ctx context.Context, opts *ListKeypairsOptions) ([]Keypair, error) {
-	url := c.ComputeURL + "/v2.1/os-keypairs"
+	url := c.ComputeURL + "/os-keypairs"
 	if opts != nil {
 		params := map[string]string{}
 		if opts.Limit > 0 {
@@ -604,7 +604,7 @@ func (c *Client) ListKeypairs(ctx context.Context, opts *ListKeypairsOptions) ([
 
 // CreateKeypair generates a new SSH keypair.
 func (c *Client) CreateKeypair(ctx context.Context, name string) (*Keypair, error) {
-	url := c.ComputeURL + "/v2.1/os-keypairs"
+	url := c.ComputeURL + "/os-keypairs"
 	body := map[string]interface{}{
 		"keypair": map[string]string{"name": name},
 	}
@@ -621,7 +621,7 @@ func (c *Client) CreateKeypair(ctx context.Context, name string) (*Keypair, erro
 
 // ImportKeypair imports an existing public key.
 func (c *Client) ImportKeypair(ctx context.Context, name, publicKey string) (*Keypair, error) {
-	url := c.ComputeURL + "/v2.1/os-keypairs"
+	url := c.ComputeURL + "/os-keypairs"
 	body := map[string]interface{}{
 		"keypair": map[string]string{
 			"name":       name,
@@ -641,7 +641,7 @@ func (c *Client) ImportKeypair(ctx context.Context, name, publicKey string) (*Ke
 
 // GetKeypair gets a keypair detail.
 func (c *Client) GetKeypair(ctx context.Context, name string) (*Keypair, error) {
-	url := fmt.Sprintf("%s/v2.1/os-keypairs/%s", c.ComputeURL, name)
+	url := fmt.Sprintf("%s/os-keypairs/%s", c.ComputeURL, name)
 	req, err := c.newRequest(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
@@ -655,7 +655,7 @@ func (c *Client) GetKeypair(ctx context.Context, name string) (*Keypair, error) 
 
 // DeleteKeypair deletes an SSH keypair.
 func (c *Client) DeleteKeypair(ctx context.Context, name string) error {
-	url := fmt.Sprintf("%s/v2.1/os-keypairs/%s", c.ComputeURL, name)
+	url := fmt.Sprintf("%s/os-keypairs/%s", c.ComputeURL, name)
 	req, err := c.newRequest(ctx, http.MethodDelete, url, nil)
 	if err != nil {
 		return err
@@ -693,7 +693,7 @@ type interfaceResponse struct {
 
 // ListServerInterfaces lists ports attached to a server.
 func (c *Client) ListServerInterfaces(ctx context.Context, serverID string) ([]InterfaceAttachment, error) {
-	url := fmt.Sprintf("%s/v2.1/servers/%s/os-interface", c.ComputeURL, serverID)
+	url := fmt.Sprintf("%s/servers/%s/os-interface", c.ComputeURL, serverID)
 	req, err := c.newRequest(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
@@ -707,7 +707,7 @@ func (c *Client) ListServerInterfaces(ctx context.Context, serverID string) ([]I
 
 // GetServerInterface gets a specific port attachment.
 func (c *Client) GetServerInterface(ctx context.Context, serverID, portID string) (*InterfaceAttachment, error) {
-	url := fmt.Sprintf("%s/v2.1/servers/%s/os-interface/%s", c.ComputeURL, serverID, portID)
+	url := fmt.Sprintf("%s/servers/%s/os-interface/%s", c.ComputeURL, serverID, portID)
 	req, err := c.newRequest(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
@@ -721,7 +721,7 @@ func (c *Client) GetServerInterface(ctx context.Context, serverID, portID string
 
 // AttachPort attaches a port to a server.
 func (c *Client) AttachPort(ctx context.Context, serverID, portID string) (*InterfaceAttachment, error) {
-	url := fmt.Sprintf("%s/v2.1/servers/%s/os-interface", c.ComputeURL, serverID)
+	url := fmt.Sprintf("%s/servers/%s/os-interface", c.ComputeURL, serverID)
 	body := map[string]interface{}{
 		"interfaceAttachment": map[string]string{"port_id": portID},
 	}
@@ -738,7 +738,7 @@ func (c *Client) AttachPort(ctx context.Context, serverID, portID string) (*Inte
 
 // DetachPort detaches a port from a server.
 func (c *Client) DetachPort(ctx context.Context, serverID, portID string) error {
-	url := fmt.Sprintf("%s/v2.1/servers/%s/os-interface/%s", c.ComputeURL, serverID, portID)
+	url := fmt.Sprintf("%s/servers/%s/os-interface/%s", c.ComputeURL, serverID, portID)
 	req, err := c.newRequest(ctx, http.MethodDelete, url, nil)
 	if err != nil {
 		return err
@@ -769,7 +769,7 @@ type volumeAttachmentResponse struct {
 
 // ListServerVolumes lists volumes attached to a server.
 func (c *Client) ListServerVolumes(ctx context.Context, serverID string) ([]ServerVolumeAttachment, error) {
-	url := fmt.Sprintf("%s/v2.1/servers/%s/os-volume_attachments", c.ComputeURL, serverID)
+	url := fmt.Sprintf("%s/servers/%s/os-volume_attachments", c.ComputeURL, serverID)
 	req, err := c.newRequest(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
@@ -783,7 +783,7 @@ func (c *Client) ListServerVolumes(ctx context.Context, serverID string) ([]Serv
 
 // GetServerVolume gets a specific volume attachment.
 func (c *Client) GetServerVolume(ctx context.Context, serverID, volumeID string) (*ServerVolumeAttachment, error) {
-	url := fmt.Sprintf("%s/v2.1/servers/%s/os-volume_attachments/%s", c.ComputeURL, serverID, volumeID)
+	url := fmt.Sprintf("%s/servers/%s/os-volume_attachments/%s", c.ComputeURL, serverID, volumeID)
 	req, err := c.newRequest(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
@@ -797,7 +797,7 @@ func (c *Client) GetServerVolume(ctx context.Context, serverID, volumeID string)
 
 // AttachVolume attaches a volume to a server.
 func (c *Client) AttachVolume(ctx context.Context, serverID, volumeID string) (*ServerVolumeAttachment, error) {
-	url := fmt.Sprintf("%s/v2.1/servers/%s/os-volume_attachments", c.ComputeURL, serverID)
+	url := fmt.Sprintf("%s/servers/%s/os-volume_attachments", c.ComputeURL, serverID)
 	body := map[string]interface{}{
 		"volumeAttachment": map[string]string{"volumeId": volumeID},
 	}
@@ -814,7 +814,7 @@ func (c *Client) AttachVolume(ctx context.Context, serverID, volumeID string) (*
 
 // DetachVolume detaches a volume from a server.
 func (c *Client) DetachVolume(ctx context.Context, serverID, volumeID string) error {
-	url := fmt.Sprintf("%s/v2.1/servers/%s/os-volume_attachments/%s", c.ComputeURL, serverID, volumeID)
+	url := fmt.Sprintf("%s/servers/%s/os-volume_attachments/%s", c.ComputeURL, serverID, volumeID)
 	req, err := c.newRequest(ctx, http.MethodDelete, url, nil)
 	if err != nil {
 		return err
@@ -842,7 +842,7 @@ type MonitoringOptions struct {
 
 // GetCPUUsage gets CPU usage data for a server.
 func (c *Client) GetCPUUsage(ctx context.Context, serverID string, opts *MonitoringOptions) (*RRDData, error) {
-	url := fmt.Sprintf("%s/v2.1/servers/%s/rrd/cpu", c.ComputeURL, serverID)
+	url := fmt.Sprintf("%s/servers/%s/rrd/cpu", c.ComputeURL, serverID)
 	if opts != nil {
 		params := map[string]string{}
 		if opts.StartDateRaw != "" {
@@ -876,7 +876,7 @@ type DiskMonitoringOptions struct {
 
 // GetDiskIO gets disk I/O data for a server.
 func (c *Client) GetDiskIO(ctx context.Context, serverID string, opts *DiskMonitoringOptions) (*RRDData, error) {
-	url := fmt.Sprintf("%s/v2.1/servers/%s/rrd/disk", c.ComputeURL, serverID)
+	url := fmt.Sprintf("%s/servers/%s/rrd/disk", c.ComputeURL, serverID)
 	if opts != nil {
 		params := map[string]string{}
 		if opts.Device != "" {
@@ -916,7 +916,7 @@ func (c *Client) GetNetworkTraffic(ctx context.Context, serverID string, opts Ne
 	if opts.PortID == "" {
 		return nil, fmt.Errorf("conoha: PortID is required for GetNetworkTraffic")
 	}
-	url := fmt.Sprintf("%s/v2.1/servers/%s/rrd/interface", c.ComputeURL, serverID)
+	url := fmt.Sprintf("%s/servers/%s/rrd/interface", c.ComputeURL, serverID)
 	params := map[string]string{"port_id": opts.PortID}
 	if opts.StartDateRaw != "" {
 		params["start_date_raw"] = opts.StartDateRaw

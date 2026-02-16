@@ -90,7 +90,7 @@ type ListImagesOptions struct {
 
 // ListImages lists available images.
 func (c *Client) ListImages(ctx context.Context, opts *ListImagesOptions) ([]Image, error) {
-	url := c.ImageServiceURL + "/v2/images"
+	url := c.ImageServiceURL + "/images"
 	if opts != nil {
 		params := map[string]string{}
 		if opts.Limit > 0 {
@@ -135,7 +135,7 @@ func (c *Client) ListImages(ctx context.Context, opts *ListImagesOptions) ([]Ima
 
 // GetImage gets an image's details.
 func (c *Client) GetImage(ctx context.Context, imageID string) (*Image, error) {
-	url := fmt.Sprintf("%s/v2/images/%s", c.ImageServiceURL, imageID)
+	url := fmt.Sprintf("%s/images/%s", c.ImageServiceURL, imageID)
 	req, err := c.newRequest(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
@@ -149,7 +149,7 @@ func (c *Client) GetImage(ctx context.Context, imageID string) (*Image, error) {
 
 // DeleteImage deletes an image.
 func (c *Client) DeleteImage(ctx context.Context, imageID string) error {
-	url := fmt.Sprintf("%s/v2/images/%s", c.ImageServiceURL, imageID)
+	url := fmt.Sprintf("%s/images/%s", c.ImageServiceURL, imageID)
 	req, err := c.newRequest(ctx, http.MethodDelete, url, nil)
 	if err != nil {
 		return err
@@ -160,7 +160,7 @@ func (c *Client) DeleteImage(ctx context.Context, imageID string) error {
 
 // GetImageQuota gets the image storage quota.
 func (c *Client) GetImageQuota(ctx context.Context) (*ImageQuota, error) {
-	url := c.ImageServiceURL + "/v2/quota"
+	url := c.ImageServiceURL + "/quota"
 	req, err := c.newRequest(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
@@ -174,7 +174,7 @@ func (c *Client) GetImageQuota(ctx context.Context) (*ImageQuota, error) {
 
 // GetImageUsage gets the current image storage usage.
 func (c *Client) GetImageUsage(ctx context.Context) (*ImageUsage, error) {
-	url := c.ImageServiceURL + "/v2/images/total"
+	url := c.ImageServiceURL + "/images/total"
 	req, err := c.newRequest(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
@@ -189,7 +189,7 @@ func (c *Client) GetImageUsage(ctx context.Context) (*ImageUsage, error) {
 // SetImageQuota changes the image storage quota.
 // imageSize format: "50GB", "550GB", etc. Minimum 50GB, additions in 500GB increments.
 func (c *Client) SetImageQuota(ctx context.Context, imageSize string) (*ImageQuota, error) {
-	url := c.ImageServiceURL + "/v2/quota"
+	url := c.ImageServiceURL + "/quota"
 	body := map[string]interface{}{
 		"quota": map[string]string{"image_size": imageSize},
 	}
@@ -206,7 +206,7 @@ func (c *Client) SetImageQuota(ctx context.Context, imageSize string) (*ImageQuo
 
 // CreateISOImage creates an ISO image metadata entry.
 func (c *Client) CreateISOImage(ctx context.Context, name string) (*Image, error) {
-	url := c.ImageServiceURL + "/v2/images"
+	url := c.ImageServiceURL + "/images"
 	body := CreateISOImageRequest{
 		Name:            name,
 		DiskFormat:      "iso",
@@ -227,7 +227,7 @@ func (c *Client) CreateISOImage(ctx context.Context, name string) (*Image, error
 
 // UploadISOImage uploads ISO file data to a previously created image entry.
 func (c *Client) UploadISOImage(ctx context.Context, imageID string, data io.Reader) error {
-	url := fmt.Sprintf("%s/v2/images/%s/file", c.ImageServiceURL, imageID)
+	url := fmt.Sprintf("%s/images/%s/file", c.ImageServiceURL, imageID)
 	req, err := http.NewRequestWithContext(ctx, http.MethodPut, url, data)
 	if err != nil {
 		return err

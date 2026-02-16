@@ -157,7 +157,7 @@ type healthMonitorResponse struct {
 
 // ListLoadBalancers lists all load balancers.
 func (c *Client) ListLoadBalancers(ctx context.Context) ([]LoadBalancer, error) {
-	url := c.LBaaSURL + "/v2.0/lbaas/loadbalancers"
+	url := c.LBaaSURL + "/lbaas/loadbalancers"
 	req, err := c.newRequest(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
@@ -171,7 +171,7 @@ func (c *Client) ListLoadBalancers(ctx context.Context) ([]LoadBalancer, error) 
 
 // GetLoadBalancer gets a load balancer's details.
 func (c *Client) GetLoadBalancer(ctx context.Context, lbID string) (*LoadBalancer, error) {
-	url := fmt.Sprintf("%s/v2.0/lbaas/loadbalancers/%s", c.LBaaSURL, lbID)
+	url := fmt.Sprintf("%s/lbaas/loadbalancers/%s", c.LBaaSURL, lbID)
 	req, err := c.newRequest(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
@@ -185,7 +185,7 @@ func (c *Client) GetLoadBalancer(ctx context.Context, lbID string) (*LoadBalance
 
 // CreateLoadBalancer creates a load balancer.
 func (c *Client) CreateLoadBalancer(ctx context.Context, name string) (*LoadBalancer, error) {
-	url := c.LBaaSURL + "/v2.0/lbaas/loadbalancers"
+	url := c.LBaaSURL + "/lbaas/loadbalancers"
 	body := map[string]interface{}{
 		"loadbalancer": map[string]string{"name": name},
 	}
@@ -202,7 +202,7 @@ func (c *Client) CreateLoadBalancer(ctx context.Context, name string) (*LoadBala
 
 // UpdateLoadBalancer updates a load balancer's name.
 func (c *Client) UpdateLoadBalancer(ctx context.Context, lbID, name string) (*LoadBalancer, error) {
-	url := fmt.Sprintf("%s/v2.0/lbaas/loadbalancers/%s", c.LBaaSURL, lbID)
+	url := fmt.Sprintf("%s/lbaas/loadbalancers/%s", c.LBaaSURL, lbID)
 	body := map[string]interface{}{
 		"loadbalancer": map[string]string{"name": name},
 	}
@@ -219,7 +219,7 @@ func (c *Client) UpdateLoadBalancer(ctx context.Context, lbID, name string) (*Lo
 
 // DeleteLoadBalancer deletes a load balancer.
 func (c *Client) DeleteLoadBalancer(ctx context.Context, lbID string) error {
-	url := fmt.Sprintf("%s/v2.0/lbaas/loadbalancers/%s", c.LBaaSURL, lbID)
+	url := fmt.Sprintf("%s/lbaas/loadbalancers/%s", c.LBaaSURL, lbID)
 	req, err := c.newRequest(ctx, http.MethodDelete, url, nil)
 	if err != nil {
 		return err
@@ -234,7 +234,7 @@ func (c *Client) DeleteLoadBalancer(ctx context.Context, lbID string) error {
 
 // ListListeners lists all listeners.
 func (c *Client) ListListeners(ctx context.Context) ([]Listener, error) {
-	url := c.LBaaSURL + "/v2.0/lbaas/listeners"
+	url := c.LBaaSURL + "/lbaas/listeners"
 	req, err := c.newRequest(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
@@ -248,7 +248,7 @@ func (c *Client) ListListeners(ctx context.Context) ([]Listener, error) {
 
 // GetListener gets a listener's details.
 func (c *Client) GetListener(ctx context.Context, listenerID string) (*Listener, error) {
-	url := fmt.Sprintf("%s/v2.0/lbaas/listeners/%s", c.LBaaSURL, listenerID)
+	url := fmt.Sprintf("%s/lbaas/listeners/%s", c.LBaaSURL, listenerID)
 	req, err := c.newRequest(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
@@ -262,7 +262,7 @@ func (c *Client) GetListener(ctx context.Context, listenerID string) (*Listener,
 
 // CreateListener creates a listener.
 func (c *Client) CreateListener(ctx context.Context, name, protocol string, port int, lbID string) (*Listener, error) {
-	url := c.LBaaSURL + "/v2.0/lbaas/listeners"
+	url := c.LBaaSURL + "/lbaas/listeners"
 	body := map[string]interface{}{
 		"listener": map[string]interface{}{
 			"name":            name,
@@ -284,7 +284,7 @@ func (c *Client) CreateListener(ctx context.Context, name, protocol string, port
 
 // UpdateListener updates a listener's name.
 func (c *Client) UpdateListener(ctx context.Context, listenerID, name string) (*Listener, error) {
-	url := fmt.Sprintf("%s/v2.0/lbaas/listeners/%s", c.LBaaSURL, listenerID)
+	url := fmt.Sprintf("%s/lbaas/listeners/%s", c.LBaaSURL, listenerID)
 	body := map[string]interface{}{
 		"listener": map[string]string{"name": name},
 	}
@@ -301,7 +301,7 @@ func (c *Client) UpdateListener(ctx context.Context, listenerID, name string) (*
 
 // DeleteListener deletes a listener.
 func (c *Client) DeleteListener(ctx context.Context, listenerID string) error {
-	url := fmt.Sprintf("%s/v2.0/lbaas/listeners/%s", c.LBaaSURL, listenerID)
+	url := fmt.Sprintf("%s/lbaas/listeners/%s", c.LBaaSURL, listenerID)
 	req, err := c.newRequest(ctx, http.MethodDelete, url, nil)
 	if err != nil {
 		return err
@@ -316,7 +316,7 @@ func (c *Client) DeleteListener(ctx context.Context, listenerID string) error {
 
 // ListPools lists all pools.
 func (c *Client) ListPools(ctx context.Context) ([]Pool, error) {
-	url := c.LBaaSURL + "/v2.0/lbaas/pools"
+	url := c.LBaaSURL + "/lbaas/pools"
 	req, err := c.newRequest(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
@@ -330,7 +330,7 @@ func (c *Client) ListPools(ctx context.Context) ([]Pool, error) {
 
 // GetPool gets a pool's details.
 func (c *Client) GetPool(ctx context.Context, poolID string) (*Pool, error) {
-	url := fmt.Sprintf("%s/v2.0/lbaas/pools/%s", c.LBaaSURL, poolID)
+	url := fmt.Sprintf("%s/lbaas/pools/%s", c.LBaaSURL, poolID)
 	req, err := c.newRequest(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
@@ -344,7 +344,7 @@ func (c *Client) GetPool(ctx context.Context, poolID string) (*Pool, error) {
 
 // CreatePool creates a pool.
 func (c *Client) CreatePool(ctx context.Context, name, protocol, lbAlgorithm, listenerID string) (*Pool, error) {
-	url := c.LBaaSURL + "/v2.0/lbaas/pools"
+	url := c.LBaaSURL + "/lbaas/pools"
 	body := map[string]interface{}{
 		"pool": map[string]string{
 			"name":         name,
@@ -366,7 +366,7 @@ func (c *Client) CreatePool(ctx context.Context, name, protocol, lbAlgorithm, li
 
 // UpdatePool updates a pool.
 func (c *Client) UpdatePool(ctx context.Context, poolID string, name, lbAlgorithm string) (*Pool, error) {
-	url := fmt.Sprintf("%s/v2.0/lbaas/pools/%s", c.LBaaSURL, poolID)
+	url := fmt.Sprintf("%s/lbaas/pools/%s", c.LBaaSURL, poolID)
 	poolBody := map[string]string{}
 	if name != "" {
 		poolBody["name"] = name
@@ -388,7 +388,7 @@ func (c *Client) UpdatePool(ctx context.Context, poolID string, name, lbAlgorith
 
 // DeletePool deletes a pool.
 func (c *Client) DeletePool(ctx context.Context, poolID string) error {
-	url := fmt.Sprintf("%s/v2.0/lbaas/pools/%s", c.LBaaSURL, poolID)
+	url := fmt.Sprintf("%s/lbaas/pools/%s", c.LBaaSURL, poolID)
 	req, err := c.newRequest(ctx, http.MethodDelete, url, nil)
 	if err != nil {
 		return err
@@ -403,7 +403,7 @@ func (c *Client) DeletePool(ctx context.Context, poolID string) error {
 
 // ListMembers lists all members of a pool.
 func (c *Client) ListMembers(ctx context.Context, poolID string) ([]Member, error) {
-	url := fmt.Sprintf("%s/v2.0/lbaas/pools/%s/members", c.LBaaSURL, poolID)
+	url := fmt.Sprintf("%s/lbaas/pools/%s/members", c.LBaaSURL, poolID)
 	req, err := c.newRequest(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
@@ -417,7 +417,7 @@ func (c *Client) ListMembers(ctx context.Context, poolID string) ([]Member, erro
 
 // GetMember gets a member's details.
 func (c *Client) GetMember(ctx context.Context, poolID, memberID string) (*Member, error) {
-	url := fmt.Sprintf("%s/v2.0/lbaas/pools/%s/members/%s", c.LBaaSURL, poolID, memberID)
+	url := fmt.Sprintf("%s/lbaas/pools/%s/members/%s", c.LBaaSURL, poolID, memberID)
 	req, err := c.newRequest(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
@@ -431,7 +431,7 @@ func (c *Client) GetMember(ctx context.Context, poolID, memberID string) (*Membe
 
 // AddMember adds a member to a pool.
 func (c *Client) AddMember(ctx context.Context, poolID, name, address string, port int) (*Member, error) {
-	url := fmt.Sprintf("%s/v2.0/lbaas/pools/%s/members", c.LBaaSURL, poolID)
+	url := fmt.Sprintf("%s/lbaas/pools/%s/members", c.LBaaSURL, poolID)
 	body := map[string]interface{}{
 		"member": map[string]interface{}{
 			"name":          name,
@@ -452,7 +452,7 @@ func (c *Client) AddMember(ctx context.Context, poolID, name, address string, po
 
 // UpdateMember updates a member (enable/disable).
 func (c *Client) UpdateMember(ctx context.Context, poolID, memberID string, adminStateUp bool) (*Member, error) {
-	url := fmt.Sprintf("%s/v2.0/lbaas/pools/%s/members/%s", c.LBaaSURL, poolID, memberID)
+	url := fmt.Sprintf("%s/lbaas/pools/%s/members/%s", c.LBaaSURL, poolID, memberID)
 	body := map[string]interface{}{
 		"member": map[string]bool{"admin_state_up": adminStateUp},
 	}
@@ -469,7 +469,7 @@ func (c *Client) UpdateMember(ctx context.Context, poolID, memberID string, admi
 
 // DeleteMember removes a member from a pool.
 func (c *Client) DeleteMember(ctx context.Context, poolID, memberID string) error {
-	url := fmt.Sprintf("%s/v2.0/lbaas/pools/%s/members/%s", c.LBaaSURL, poolID, memberID)
+	url := fmt.Sprintf("%s/lbaas/pools/%s/members/%s", c.LBaaSURL, poolID, memberID)
 	req, err := c.newRequest(ctx, http.MethodDelete, url, nil)
 	if err != nil {
 		return err
@@ -484,7 +484,7 @@ func (c *Client) DeleteMember(ctx context.Context, poolID, memberID string) erro
 
 // ListHealthMonitors lists all health monitors.
 func (c *Client) ListHealthMonitors(ctx context.Context) ([]HealthMonitor, error) {
-	url := c.LBaaSURL + "/v2.0/lbaas/healthmonitors"
+	url := c.LBaaSURL + "/lbaas/healthmonitors"
 	req, err := c.newRequest(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
@@ -498,7 +498,7 @@ func (c *Client) ListHealthMonitors(ctx context.Context) ([]HealthMonitor, error
 
 // GetHealthMonitor gets a health monitor's details.
 func (c *Client) GetHealthMonitor(ctx context.Context, hmID string) (*HealthMonitor, error) {
-	url := fmt.Sprintf("%s/v2.0/lbaas/healthmonitors/%s", c.LBaaSURL, hmID)
+	url := fmt.Sprintf("%s/lbaas/healthmonitors/%s", c.LBaaSURL, hmID)
 	req, err := c.newRequest(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
@@ -512,7 +512,7 @@ func (c *Client) GetHealthMonitor(ctx context.Context, hmID string) (*HealthMoni
 
 // CreateHealthMonitor creates a health monitor.
 func (c *Client) CreateHealthMonitor(ctx context.Context, opts CreateHealthMonitorRequest) (*HealthMonitor, error) {
-	url := c.LBaaSURL + "/v2.0/lbaas/healthmonitors"
+	url := c.LBaaSURL + "/lbaas/healthmonitors"
 	body := map[string]interface{}{"healthmonitor": opts}
 	req, err := c.newRequest(ctx, http.MethodPost, url, body)
 	if err != nil {
@@ -527,7 +527,7 @@ func (c *Client) CreateHealthMonitor(ctx context.Context, opts CreateHealthMonit
 
 // UpdateHealthMonitor updates a health monitor's name.
 func (c *Client) UpdateHealthMonitor(ctx context.Context, hmID, name string) (*HealthMonitor, error) {
-	url := fmt.Sprintf("%s/v2.0/lbaas/healthmonitors/%s", c.LBaaSURL, hmID)
+	url := fmt.Sprintf("%s/lbaas/healthmonitors/%s", c.LBaaSURL, hmID)
 	body := map[string]interface{}{
 		"healthmonitor": map[string]string{"name": name},
 	}
@@ -544,7 +544,7 @@ func (c *Client) UpdateHealthMonitor(ctx context.Context, hmID, name string) (*H
 
 // DeleteHealthMonitor deletes a health monitor.
 func (c *Client) DeleteHealthMonitor(ctx context.Context, hmID string) error {
-	url := fmt.Sprintf("%s/v2.0/lbaas/healthmonitors/%s", c.LBaaSURL, hmID)
+	url := fmt.Sprintf("%s/lbaas/healthmonitors/%s", c.LBaaSURL, hmID)
 	req, err := c.newRequest(ctx, http.MethodDelete, url, nil)
 	if err != nil {
 		return err

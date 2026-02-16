@@ -225,37 +225,42 @@ func NewClient(opts ...ClientOption) *Client {
 
 // fillURLsFromRegion fills any unset URLs using the region pattern.
 // Only fills URLs that were NOT explicitly set by the user.
+// Generated URLs include the API version path so that service methods
+// can append resource paths directly (e.g. c.ComputeURL + "/servers").
 func (c *Client) fillURLsFromRegion() {
 	r := c.Region
 	if c.IdentityURL == "" {
-		c.IdentityURL = fmt.Sprintf("https://identity.%s.conoha.io", r)
+		c.IdentityURL = fmt.Sprintf("https://identity.%s.conoha.io/v3", r)
 	}
 	if c.ComputeURL == "" {
-		c.ComputeURL = fmt.Sprintf("https://compute.%s.conoha.io", r)
+		c.ComputeURL = fmt.Sprintf("https://compute.%s.conoha.io/v2.1", r)
 	}
 	if c.BlockStorageURL == "" {
-		c.BlockStorageURL = fmt.Sprintf("https://block-storage.%s.conoha.io", r)
+		c.BlockStorageURL = fmt.Sprintf("https://block-storage.%s.conoha.io/v3", r)
 	}
 	if c.ImageServiceURL == "" {
-		c.ImageServiceURL = fmt.Sprintf("https://image-service.%s.conoha.io", r)
+		c.ImageServiceURL = fmt.Sprintf("https://image-service.%s.conoha.io/v2", r)
 	}
 	if c.NetworkingURL == "" {
-		c.NetworkingURL = fmt.Sprintf("https://networking.%s.conoha.io", r)
+		c.NetworkingURL = fmt.Sprintf("https://networking.%s.conoha.io/v2.0", r)
 	}
 	if c.LBaaSURL == "" {
-		c.LBaaSURL = fmt.Sprintf("https://lbaas.%s.conoha.io", r)
+		c.LBaaSURL = fmt.Sprintf("https://lbaas.%s.conoha.io/v2.0", r)
 	}
 	if c.ObjectStorageURL == "" {
-		c.ObjectStorageURL = fmt.Sprintf("https://object-storage.%s.conoha.io", r)
+		c.ObjectStorageURL = fmt.Sprintf("https://object-storage.%s.conoha.io/v1", r)
 	}
 	if c.DNSServiceURL == "" {
-		c.DNSServiceURL = fmt.Sprintf("https://dns-service.%s.conoha.io", r)
+		c.DNSServiceURL = fmt.Sprintf("https://dns-service.%s.conoha.io/v1", r)
 	}
 }
 
 // updateEndpointsFromCatalog updates endpoint URLs from the Service Catalog
 // returned by authentication. Only updates URLs that were NOT explicitly set.
 // When the client has a Region set, only endpoints matching that region are used.
+//
+// Catalog URLs are used as-is (including any version path such as /v2.1 or /v3).
+// Service methods append only the resource path (e.g. "/servers"), not the version.
 func (c *Client) updateEndpointsFromCatalog(catalog []ServiceCatalog) {
 	for _, svc := range catalog {
 		// Find the public endpoint URL, preferring one that matches the client's region.

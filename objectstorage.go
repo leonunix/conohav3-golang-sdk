@@ -56,7 +56,7 @@ type ListObjectsOptions struct {
 }
 
 func (c *Client) objectStoragePath(parts ...string) string {
-	path := fmt.Sprintf("%s/v1/AUTH_%s", c.ObjectStorageURL, c.TenantID)
+	path := fmt.Sprintf("%s/AUTH_%s", c.ObjectStorageURL, c.TenantID)
 	for _, p := range parts {
 		// Encode each segment but preserve "/" within object names.
 		encoded := url.PathEscape(p)
