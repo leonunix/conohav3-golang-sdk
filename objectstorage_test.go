@@ -2,9 +2,13 @@ package conoha
 
 import (
 	"context"
+	"crypto/hmac"
+	"crypto/sha1"
+	"encoding/hex"
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"strings"
 	"testing"
 )
@@ -184,6 +188,49 @@ func TestDeleteContainer_Success(t *testing.T) {
 	}
 }
 
+func TestGetContainerInfo_Success(t *testing.T) {
+	var capturedMethod string
+	server, client := setupTestServer(func(w http.ResponseWriter, r *http.Request) {
+		capturedMethod = r.Method
+		w.Header().Set("X-Container-Object-Count", "7")
+		w.Header().Set("X-Container-Bytes-Used", "4096")
+		w.Header().Set("X-Container-Read", ".r:*")
+		w.Header().Set("X-Container-Meta-Color", "blue")
+		w.WriteHeader(204)
+	})
+	defer server.Close()
+
+	info, err := client.GetContainerInfo(context.Background(), "mycontainer")
+	assertNoError(t, err)
+
+	if capturedMethod != http.MethodHead {
+		t.Errorf("Method = %q, want HEAD", capturedMethod)
+	}
+	if info.ObjectCount != 7 {
+		t.Errorf("ObjectCount = %d", info.ObjectCount)
+	}
+	if info.BytesUsed != 4096 {
+		t.Errorf("BytesUsed = %d", info.BytesUsed)
+	}
+	if info.ReadACL != ".r:*" {
+		t.Errorf("ReadACL = %q", info.ReadACL)
+	}
+	if info.Metadata["color"] != "blue" {
+		t.Errorf("Metadata[color] = %q", info.Metadata["color"])
+	}
+}
+
+func TestGetContainerInfo_Error(t *testing.T) {
+	server, client := setupTestServer(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(404)
+		w.Write([]byte("Not Found"))
+	})
+	defer server.Close()
+
+	_, err := client.GetContainerInfo(context.Background(), "missing-container")
+	assertAPIError(t, err, 404)
+}
+
 // ============================================================
 // Object Operations
 // ============================================================
@@ -294,6 +341,54 @@ func TestDeleteObject_Success(t *testing.T) {
 	if capturedMethod != http.MethodDelete {
 		t.Errorf("Method = %q", capturedMethod)
 	}
+}
+
+func TestGetObjectInfo_Success(t *testing.T) {
+	var capturedMethod string
+	server, client := setupTestServer(func(w http.ResponseWriter, r *http.Request) {
+		capturedMethod = r.Method
+		w.Header().Set("Content-Length", "1024")
+		w.Header().Set("Content-Type", "text/plain")
+		w.Header().Set("ETag", "abc123")
+		w.Header().Set("Last-Modified", "Mon, 01 Jan 2024 00:00:00 GMT")
+		w.Header().Set("X-Delete-At", "1700000000")
+		w.Header().Set("X-Object-Meta-Owner", "sdk")
+		w.WriteHeader(200)
+	})
+	defer server.Close()
+
+	info, err := client.GetObjectInfo(context.Background(), "mycontainer", "myfile.txt")
+	assertNoError(t, err)
+
+	if capturedMethod != http.MethodHead {
+		t.Errorf("Method = %q, want HEAD", capturedMethod)
+	}
+	if info.ContentLength != 1024 {
+		t.Errorf("ContentLength = %d", info.ContentLength)
+	}
+	if info.ContentType != "text/plain" {
+		t.Errorf("ContentType = %q", info.ContentType)
+	}
+	if info.ETag != "abc123" {
+		t.Errorf("ETag = %q", info.ETag)
+	}
+	if info.DeleteAt != 1700000000 {
+		t.Errorf("DeleteAt = %d", info.DeleteAt)
+	}
+	if info.Metadata["owner"] != "sdk" {
+		t.Errorf("Metadata[owner] = %q", info.Metadata["owner"])
+	}
+}
+
+func TestGetObjectInfo_Error(t *testing.T) {
+	server, client := setupTestServer(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(404)
+		w.Write([]byte("Not Found"))
+	})
+	defer server.Close()
+
+	_, err := client.GetObjectInfo(context.Background(), "container", "missing.txt")
+	assertAPIError(t, err, 404)
 }
 
 func TestCopyObject_Success(t *testing.T) {
@@ -415,6 +510,76 @@ func TestSetTempURLKey_Success(t *testing.T) {
 	if capturedHeader != "my-secret-key" {
 		t.Errorf("X-Account-Meta-Temp-URL-Key = %q", capturedHeader)
 	}
+}
+
+func TestRemoveTempURLKey_Success(t *testing.T) {
+	var headerPresent bool
+	server, client := setupTestServer(func(w http.ResponseWriter, r *http.Request) {
+		for k := range r.Header {
+			if strings.EqualFold(k, "X-Remove-Account-Meta-Temp-URL-Key") {
+				headerPresent = true
+				break
+			}
+		}
+		w.WriteHeader(204)
+	})
+	defer server.Close()
+
+	err := client.RemoveTempURLKey(context.Background())
+	assertNoError(t, err)
+
+	if !headerPresent {
+		t.Error("X-Remove-Account-Meta-Temp-URL-Key header should be present")
+	}
+}
+
+func TestGenerateTempURL_Success(t *testing.T) {
+	c := NewClient()
+	c.ObjectStorageURL = "https://object-storage.c3j1.conoha.io/v1"
+	c.TenantID = "tenant-abc"
+
+	key := "my-secret-key"
+	expires := int64(1700000000)
+
+	tempURL, err := c.GenerateTempURL("get", "mycontainer", "path/to file.txt", key, expires)
+	assertNoError(t, err)
+
+	u, err := url.Parse(tempURL)
+	assertNoError(t, err)
+
+	if u.EscapedPath() != "/v1/AUTH_tenant-abc/mycontainer/path/to%20file.txt" {
+		t.Errorf("EscapedPath = %q", u.EscapedPath())
+	}
+	if u.Query().Get("temp_url_expires") != "1700000000" {
+		t.Errorf("temp_url_expires = %q", u.Query().Get("temp_url_expires"))
+	}
+
+	payload := "GET\n1700000000\n/v1/AUTH_tenant-abc/mycontainer/path/to%20file.txt"
+	mac := hmac.New(sha1.New, []byte(key))
+	mac.Write([]byte(payload))
+	expectedSig := hex.EncodeToString(mac.Sum(nil))
+
+	if u.Query().Get("temp_url_sig") != expectedSig {
+		t.Errorf("temp_url_sig = %q, want %q", u.Query().Get("temp_url_sig"), expectedSig)
+	}
+}
+
+func TestGenerateTempURL_Validation(t *testing.T) {
+	c := NewClient()
+	c.ObjectStorageURL = "https://object-storage.c3j1.conoha.io/v1"
+	c.TenantID = "tenant-abc"
+
+	_, err := c.GenerateTempURL("", "container", "file.txt", "key", 1700000000)
+	assertError(t, err)
+
+	_, err = c.GenerateTempURL("GET", "container", "", "key", 1700000000)
+	assertError(t, err)
+
+	_, err = c.GenerateTempURL("GET", "container", "file.txt", "", 1700000000)
+	assertError(t, err)
+
+	_, err = c.GenerateTempURL("GET", "container", "file.txt", "key", 0)
+	assertError(t, err)
 }
 
 // ============================================================

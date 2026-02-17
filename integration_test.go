@@ -10,6 +10,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net/http"
 	"os"
 	"strings"
 	"testing"
@@ -1546,6 +1547,19 @@ func TestIntegration_ObjectStorage_CRUD(t *testing.T) {
 		t.Logf("Created container: %s", containerName)
 	})
 
+	t.Run("GetContainerInfo", func(t *testing.T) {
+		info, err := testClient.GetContainerInfo(testCtx, containerName)
+		if err != nil {
+			t.Fatalf("GetContainerInfo: %v", err)
+		}
+		if info.ObjectCount != 0 {
+			t.Errorf("ObjectCount = %d, want 0", info.ObjectCount)
+		}
+		if info.BytesUsed != 0 {
+			t.Errorf("BytesUsed = %d, want 0", info.BytesUsed)
+		}
+	})
+
 	defer func() {
 		_ = testClient.DeleteObject(testCtx, containerName, objectName)
 		_ = testClient.DeleteObject(testCtx, containerName, "test-object-copy.txt")
@@ -1575,6 +1589,16 @@ func TestIntegration_ObjectStorage_CRUD(t *testing.T) {
 		err := testClient.UploadObject(testCtx, containerName, objectName, bytes.NewReader(objectData))
 		if err != nil {
 			t.Fatalf("UploadObject: %v", err)
+		}
+	})
+
+	t.Run("GetObjectInfo", func(t *testing.T) {
+		info, err := testClient.GetObjectInfo(testCtx, containerName, objectName)
+		if err != nil {
+			t.Fatalf("GetObjectInfo: %v", err)
+		}
+		if info.ContentLength != int64(len(objectData)) {
+			t.Errorf("ContentLength = %d, want %d", info.ContentLength, len(objectData))
 		}
 	})
 
@@ -1632,6 +1656,47 @@ func TestIntegration_ObjectStorage_CRUD(t *testing.T) {
 		}
 		if !bytes.Equal(data, objectData) {
 			t.Errorf("copied data = %q, want %q", string(data), string(objectData))
+		}
+	})
+
+	t.Run("TempURL", func(t *testing.T) {
+		tempKey := "sdk-inttest-temp-key-" + randomSuffix()
+		if err := testClient.SetTempURLKey(testCtx, tempKey); err != nil {
+			t.Fatalf("SetTempURLKey: %v", err)
+		}
+		defer func() {
+			if err := testClient.RemoveTempURLKey(testCtx); err != nil {
+				t.Logf("WARNING: cleanup RemoveTempURLKey failed: %v", err)
+			}
+		}()
+
+		expires := time.Now().Add(5 * time.Minute).Unix()
+		tempURL, err := testClient.GenerateTempURL(http.MethodGet, containerName, objectName, tempKey, expires)
+		if err != nil {
+			t.Fatalf("GenerateTempURL: %v", err)
+		}
+
+		req, err := http.NewRequestWithContext(testCtx, http.MethodGet, tempURL, nil)
+		if err != nil {
+			t.Fatalf("new temp URL request: %v", err)
+		}
+		resp, err := testClient.HTTPClient.Do(req)
+		if err != nil {
+			t.Fatalf("temp URL GET: %v", err)
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode != 200 {
+			body, _ := io.ReadAll(resp.Body)
+			t.Fatalf("temp URL GET status=%d body=%q", resp.StatusCode, string(body))
+		}
+
+		data, err := io.ReadAll(resp.Body)
+		if err != nil {
+			t.Fatalf("reading temp URL body: %v", err)
+		}
+		if !bytes.Equal(data, objectData) {
+			t.Errorf("temp URL data = %q, want %q", string(data), string(objectData))
 		}
 	})
 

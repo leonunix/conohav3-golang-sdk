@@ -2,10 +2,14 @@ package conoha
 
 import (
 	"context"
+	"crypto/hmac"
+	"crypto/sha1"
+	"encoding/hex"
 	"fmt"
 	"io"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 )
 
@@ -15,11 +19,21 @@ import (
 
 // AccountInfo represents object storage account information (from HEAD response headers).
 type AccountInfo struct {
-	ContainerCount int64
-	ObjectCount    int64
-	BytesUsed      int64
+	ContainerCount  int64
+	ObjectCount     int64
+	BytesUsed       int64
 	BytesUsedActual int64
-	QuotaBytes     int64
+	QuotaBytes      int64
+}
+
+// ContainerInfo represents container details from response headers.
+type ContainerInfo struct {
+	ObjectCount      int64
+	BytesUsed        int64
+	ReadACL          string
+	WriteACL         string
+	VersionsLocation string
+	Metadata         map[string]string
 }
 
 // Container represents an object storage container.
@@ -27,6 +41,16 @@ type Container struct {
 	Name  string `json:"name"`
 	Count int    `json:"count"`
 	Bytes int64  `json:"bytes"`
+}
+
+// ObjectInfo represents object details from response headers.
+type ObjectInfo struct {
+	ContentLength int64
+	ContentType   string
+	ETag          string
+	LastModified  string
+	DeleteAt      int64
+	Metadata      map[string]string
 }
 
 // Object represents an object in a container.
@@ -188,6 +212,39 @@ func (c *Client) DeleteContainer(ctx context.Context, name string) error {
 	return nil
 }
 
+// GetContainerInfo gets container details from response headers.
+func (c *Client) GetContainerInfo(ctx context.Context, name string) (*ContainerInfo, error) {
+	url := c.objectStoragePath(name)
+	req, err := http.NewRequestWithContext(ctx, http.MethodHead, url, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("X-Auth-Token", c.Token)
+	req.Header.Set("Accept", "application/json")
+
+	resp, err := c.HTTPClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode >= 400 {
+		body, _ := io.ReadAll(resp.Body)
+		return nil, newAPIError(resp.StatusCode, resp.Status, string(body))
+	}
+
+	info := &ContainerInfo{
+		ReadACL:          resp.Header.Get("X-Container-Read"),
+		WriteACL:         resp.Header.Get("X-Container-Write"),
+		VersionsLocation: resp.Header.Get("X-Versions-Location"),
+		Metadata:         map[string]string{},
+	}
+	parseHeaderInt64(resp.Header, "X-Container-Object-Count", &info.ObjectCount)
+	parseHeaderInt64(resp.Header, "X-Container-Bytes-Used", &info.BytesUsed)
+	parsePrefixedMetadata(resp.Header, "x-container-meta-", info.Metadata)
+	return info, nil
+}
+
 // ------------------------------------------------------------
 // Object Operations
 // ------------------------------------------------------------
@@ -292,6 +349,39 @@ func (c *Client) DeleteObject(ctx context.Context, container, objectName string)
 		return newAPIError(resp.StatusCode, resp.Status, string(body))
 	}
 	return nil
+}
+
+// GetObjectInfo gets object details from response headers.
+func (c *Client) GetObjectInfo(ctx context.Context, container, objectName string) (*ObjectInfo, error) {
+	url := c.objectStoragePath(container, objectName)
+	req, err := http.NewRequestWithContext(ctx, http.MethodHead, url, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("X-Auth-Token", c.Token)
+	req.Header.Set("Accept", "application/json")
+
+	resp, err := c.HTTPClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode >= 400 {
+		body, _ := io.ReadAll(resp.Body)
+		return nil, newAPIError(resp.StatusCode, resp.Status, string(body))
+	}
+
+	info := &ObjectInfo{
+		ContentType:  resp.Header.Get("Content-Type"),
+		ETag:         resp.Header.Get("ETag"),
+		LastModified: resp.Header.Get("Last-Modified"),
+		Metadata:     map[string]string{},
+	}
+	parseHeaderInt64(resp.Header, "Content-Length", &info.ContentLength)
+	parseHeaderInt64(resp.Header, "X-Delete-At", &info.DeleteAt)
+	parsePrefixedMetadata(resp.Header, "x-object-meta-", info.Metadata)
+	return info, nil
 }
 
 // CopyObject copies an object to another container/name.
@@ -482,6 +572,67 @@ func (c *Client) SetTempURLKey(ctx context.Context, key string) error {
 	return nil
 }
 
+// RemoveTempURLKey removes the temporary URL key from the account metadata.
+func (c *Client) RemoveTempURLKey(ctx context.Context) error {
+	url := c.objectStoragePath()
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, nil)
+	if err != nil {
+		return err
+	}
+	req.Header.Set("X-Auth-Token", c.Token)
+	req.Header.Set("X-Remove-Account-Meta-Temp-URL-Key", "")
+
+	resp, err := c.HTTPClient.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode >= 400 {
+		body, _ := io.ReadAll(resp.Body)
+		return newAPIError(resp.StatusCode, resp.Status, string(body))
+	}
+	return nil
+}
+
+// GenerateTempURL generates a signed temporary URL for object access.
+func (c *Client) GenerateTempURL(method, container, objectName, key string, expires int64) (string, error) {
+	method = strings.ToUpper(strings.TrimSpace(method))
+	if method == "" {
+		return "", fmt.Errorf("method is required")
+	}
+	if container == "" {
+		return "", fmt.Errorf("container is required")
+	}
+	if objectName == "" {
+		return "", fmt.Errorf("object name is required")
+	}
+	if key == "" {
+		return "", fmt.Errorf("temp url key is required")
+	}
+	if expires <= 0 {
+		return "", fmt.Errorf("expires must be greater than 0")
+	}
+
+	u, err := url.Parse(c.objectStoragePath(container, objectName))
+	if err != nil {
+		return "", err
+	}
+	path := u.EscapedPath()
+	payload := method + "\n" + strconv.FormatInt(expires, 10) + "\n" + path
+
+	mac := hmac.New(sha1.New, []byte(key))
+	mac.Write([]byte(payload))
+	sig := hex.EncodeToString(mac.Sum(nil))
+
+	q := u.Query()
+	q.Set("temp_url_sig", sig)
+	q.Set("temp_url_expires", strconv.FormatInt(expires, 10))
+	u.RawQuery = q.Encode()
+
+	return u.String(), nil
+}
+
 // ------------------------------------------------------------
 // Large Object Upload
 // ------------------------------------------------------------
@@ -544,4 +695,13 @@ func parseHeaderInt64(h http.Header, key string, dest *int64) {
 	var n int64
 	fmt.Sscanf(val, "%d", &n)
 	*dest = n
+}
+
+func parsePrefixedMetadata(h http.Header, prefix string, metadata map[string]string) {
+	for k, vals := range h {
+		lk := strings.ToLower(k)
+		if strings.HasPrefix(lk, prefix) && len(vals) > 0 {
+			metadata[strings.TrimPrefix(lk, prefix)] = vals[0]
+		}
+	}
 }
