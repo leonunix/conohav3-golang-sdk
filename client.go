@@ -268,8 +268,10 @@ func (c *Client) fillURLsFromRegion() {
 // returned by authentication. Only updates URLs that were NOT explicitly set.
 // When the client has a Region set, only endpoints matching that region are used.
 //
-// Catalog URLs are used as-is (including any version path such as /v2.1 or /v3).
-// Service methods append only the resource path (e.g. "/servers"), not the version.
+// The ConoHa service catalog may return base URLs without version paths
+// (e.g. "https://networking.c3j1.conoha.io" instead of ".../v2.0").
+// This method normalizes catalog URLs by ensuring the required API version
+// path is present, since SDK methods append only resource paths (e.g. "/servers").
 func (c *Client) updateEndpointsFromCatalog(catalog []ServiceCatalog) {
 	for _, svc := range catalog {
 		// Find the public endpoint URL, preferring one that matches the client's region.
@@ -291,38 +293,58 @@ func (c *Client) updateEndpointsFromCatalog(catalog []ServiceCatalog) {
 		switch svc.Type {
 		case ServiceTypeIdentity:
 			if !c.explicitURLs["identity"] {
-				c.IdentityURL = publicURL
+				c.IdentityURL = ensureVersionPath(publicURL, "/v3")
 			}
 		case ServiceTypeCompute:
 			if !c.explicitURLs["compute"] {
-				c.ComputeURL = publicURL
+				c.ComputeURL = ensureVersionPath(publicURL, "/v2.1")
 			}
-		case ServiceTypeBlockStorage:
+		case ServiceTypeBlockStorage, "volumev3":
 			if !c.explicitURLs["block-storage"] {
-				c.BlockStorageURL = publicURL
+				// Catalog may include tenant ID in path (e.g. /v3/{tenantID}).
+				// Strip everything after the version path since SDK methods add tenant ID.
+				u := ensureVersionPath(publicURL, "/v3")
+				if idx := strings.Index(u, "/v3/"); idx >= 0 {
+					u = u[:idx+3]
+				}
+				c.BlockStorageURL = u
 			}
 		case ServiceTypeImage:
 			if !c.explicitURLs["image"] {
-				c.ImageServiceURL = publicURL
+				c.ImageServiceURL = ensureVersionPath(publicURL, "/v2")
 			}
 		case ServiceTypeNetwork:
 			if !c.explicitURLs["network"] {
-				c.NetworkingURL = publicURL
+				c.NetworkingURL = ensureVersionPath(publicURL, "/v2.0")
 			}
 		case ServiceTypeLBaaS:
 			if !c.explicitURLs["load-balancer"] {
-				c.LBaaSURL = publicURL
+				c.LBaaSURL = ensureVersionPath(publicURL, "/v2.0")
 			}
 		case ServiceTypeObjectStore:
 			if !c.explicitURLs["object-store"] {
-				c.ObjectStorageURL = publicURL
+				// Catalog may include /v1/AUTH_{tenantID}. Strip the AUTH_ portion
+				// since objectStoragePath() appends it.
+				u := publicURL
+				if idx := strings.Index(u, "/AUTH_"); idx >= 0 {
+					u = u[:idx]
+				}
+				c.ObjectStorageURL = ensureVersionPath(u, "/v1")
 			}
 		case ServiceTypeDNS:
 			if !c.explicitURLs["dns"] {
-				c.DNSServiceURL = publicURL
+				c.DNSServiceURL = ensureVersionPath(publicURL, "/v1")
 			}
 		}
 	}
+}
+
+// ensureVersionPath appends the version path suffix to the URL if not already present.
+func ensureVersionPath(rawURL, versionPath string) string {
+	if strings.Contains(rawURL, versionPath) {
+		return rawURL
+	}
+	return rawURL + versionPath
 }
 
 // APIError represents an error response from the ConoHa API.

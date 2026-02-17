@@ -492,12 +492,18 @@ func (c *Client) DeleteRole(ctx context.Context, roleID string) error {
 // Permissions
 // ------------------------------------------------------------
 
+// Permission represents an available API permission.
+type Permission struct {
+	Name        string `json:"name"`
+	Description string `json:"description"`
+}
+
 type permissionsResponse struct {
-	Permissions []string `json:"permissions"`
+	Permissions []Permission `json:"permissions"`
 }
 
 // ListPermissions lists all available permissions.
-func (c *Client) ListPermissions(ctx context.Context) ([]string, error) {
+func (c *Client) ListPermissions(ctx context.Context) ([]Permission, error) {
 	url := c.IdentityURL + "/permissions"
 	req, err := c.newRequest(ctx, http.MethodGet, url, nil)
 	if err != nil {

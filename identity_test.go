@@ -346,7 +346,7 @@ func TestDeleteRole_Success(t *testing.T) {
 func TestListPermissions_Success(t *testing.T) {
 	server, client := setupTestServer(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(200)
-		w.Write([]byte(`{"permissions":["compute:read","compute:write"]}`))
+		w.Write([]byte(`{"permissions":[{"name":"compute:read","description":"Read compute"},{"name":"compute:write","description":"Write compute"}]}`))
 	})
 	defer server.Close()
 
@@ -355,6 +355,9 @@ func TestListPermissions_Success(t *testing.T) {
 
 	if len(perms) != 2 {
 		t.Fatalf("got %d permissions", len(perms))
+	}
+	if perms[0].Name != "compute:read" {
+		t.Errorf("perms[0].Name = %q", perms[0].Name)
 	}
 }
 
