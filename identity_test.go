@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"net/http/httptest"
 	"strings"
 	"testing"
 )
@@ -130,7 +131,7 @@ func TestAuthenticate_Error(t *testing.T) {
 }
 
 func TestAuthenticate_CatalogAutoDiscovery(t *testing.T) {
-	server, client := setupTestServer(func(w http.ResponseWriter, r *http.Request) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("X-Subject-Token", "token")
 		w.WriteHeader(201)
 		w.Write([]byte(`{
@@ -148,11 +149,15 @@ func TestAuthenticate_CatalogAutoDiscovery(t *testing.T) {
 				"project": {"id": "tenant-123"}
 			}
 		}`))
-	})
+	}))
 	defer server.Close()
 
-	// IdentityURL and ComputeURL are explicit (set by setupTestServer)
-	// so they should NOT be overridden by catalog
+	// Use With*URL to mark as explicit — these should NOT be overridden by catalog
+	client := NewClient(
+		WithIdentityURL(server.URL),
+		WithComputeURL(server.URL),
+	)
+
 	origIdentity := client.IdentityURL
 	origCompute := client.ComputeURL
 

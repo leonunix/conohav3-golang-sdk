@@ -57,6 +57,9 @@ type Client struct {
 	// explicitURLs tracks which URLs were explicitly set by the user.
 	// These will NOT be overridden by Service Catalog auto-discovery.
 	explicitURLs map[string]bool
+
+	// explicitRegion is true when the user explicitly called WithRegion().
+	explicitRegion bool
 }
 
 // ClientOption configures the Client.
@@ -68,6 +71,7 @@ type ClientOption func(*Client)
 func WithRegion(region string) ClientOption {
 	return func(c *Client) {
 		c.Region = region
+		c.explicitRegion = true
 	}
 }
 
@@ -228,6 +232,21 @@ func NewClient(opts ...ClientOption) *Client {
 	for _, opt := range opts {
 		opt(c)
 	}
+
+	// If the user set an explicit Identity URL but did not set the region,
+	// try to infer the region from the URL (e.g. "https://identity.c3j2.conoha.io"
+	// → region "c3j2"). This ensures that all other auto-generated URLs and
+	// Service Catalog filtering use the correct region.
+	if !c.explicitRegion && c.explicitURLs["identity"] {
+		if r := extractRegionFromConoHaURL(c.IdentityURL); r != "" {
+			c.Region = r
+		}
+	}
+
+	// Ensure version paths are present on explicitly set URLs so that
+	// SDK methods can append resource paths directly (e.g. "/auth/tokens").
+	c.normalizeExplicitURLs()
+
 	c.fillURLsFromRegion()
 	return c
 }
@@ -336,6 +355,52 @@ func (c *Client) updateEndpointsFromCatalog(catalog []ServiceCatalog) {
 				c.DNSServiceURL = ensureVersionPath(publicURL, "/v1")
 			}
 		}
+	}
+}
+
+// extractRegionFromConoHaURL extracts the region from a ConoHa-style URL.
+// For example, "https://identity.c3j2.conoha.io/v3" returns "c3j2".
+// Returns "" if the URL does not match the expected pattern.
+func extractRegionFromConoHaURL(rawURL string) string {
+	u, err := url.Parse(rawURL)
+	if err != nil {
+		return ""
+	}
+	// Expected host format: {service}.{region}.conoha.io
+	parts := strings.Split(u.Hostname(), ".")
+	if len(parts) >= 4 && parts[len(parts)-2] == "conoha" && parts[len(parts)-1] == "io" {
+		return parts[1]
+	}
+	return ""
+}
+
+// normalizeExplicitURLs ensures that explicitly set URLs contain the required
+// API version path. Users commonly set URLs like "https://identity.c3j2.conoha.io"
+// without the "/v3" suffix; this method appends it so SDK methods work correctly.
+func (c *Client) normalizeExplicitURLs() {
+	if c.explicitURLs["identity"] {
+		c.IdentityURL = ensureVersionPath(strings.TrimRight(c.IdentityURL, "/"), "/v3")
+	}
+	if c.explicitURLs["compute"] {
+		c.ComputeURL = ensureVersionPath(strings.TrimRight(c.ComputeURL, "/"), "/v2.1")
+	}
+	if c.explicitURLs["block-storage"] {
+		c.BlockStorageURL = ensureVersionPath(strings.TrimRight(c.BlockStorageURL, "/"), "/v3")
+	}
+	if c.explicitURLs["image"] {
+		c.ImageServiceURL = ensureVersionPath(strings.TrimRight(c.ImageServiceURL, "/"), "/v2")
+	}
+	if c.explicitURLs["network"] {
+		c.NetworkingURL = ensureVersionPath(strings.TrimRight(c.NetworkingURL, "/"), "/v2.0")
+	}
+	if c.explicitURLs["load-balancer"] {
+		c.LBaaSURL = ensureVersionPath(strings.TrimRight(c.LBaaSURL, "/"), "/v2.0")
+	}
+	if c.explicitURLs["object-store"] {
+		c.ObjectStorageURL = ensureVersionPath(strings.TrimRight(c.ObjectStorageURL, "/"), "/v1")
+	}
+	if c.explicitURLs["dns"] {
+		c.DNSServiceURL = ensureVersionPath(strings.TrimRight(c.DNSServiceURL, "/"), "/v1")
 	}
 }
 

@@ -72,7 +72,8 @@ func TestNewClient_WithHTTPClient(t *testing.T) {
 func TestNewClient_WithExplicitURL(t *testing.T) {
 	c := NewClient(WithComputeURL("https://custom-compute.example.com"))
 
-	if c.ComputeURL != "https://custom-compute.example.com" {
+	// Version path should be auto-appended
+	if c.ComputeURL != "https://custom-compute.example.com/v2.1" {
 		t.Errorf("ComputeURL = %q", c.ComputeURL)
 	}
 	if !c.explicitURLs["compute"] {
@@ -90,10 +91,11 @@ func TestNewClient_WithEndpoints(t *testing.T) {
 		Compute:  "https://compute.example.com",
 	}))
 
-	if c.IdentityURL != "https://id.example.com" {
+	// Version paths should be auto-appended
+	if c.IdentityURL != "https://id.example.com/v3" {
 		t.Errorf("IdentityURL = %q", c.IdentityURL)
 	}
-	if c.ComputeURL != "https://compute.example.com" {
+	if c.ComputeURL != "https://compute.example.com/v2.1" {
 		t.Errorf("ComputeURL = %q", c.ComputeURL)
 	}
 	if !c.explicitURLs["identity"] || !c.explicitURLs["compute"] {
@@ -120,14 +122,126 @@ func TestWithEndpoints_EmptyStringsIgnored(t *testing.T) {
 }
 
 // ============================================================
+// Region auto-inference from IdentityURL
+// ============================================================
+
+func TestNewClient_WithIdentityURL_InfersRegion(t *testing.T) {
+	c := NewClient(WithIdentityURL("https://identity.c3j2.conoha.io"))
+
+	if c.Region != "c3j2" {
+		t.Errorf("Region = %q, want %q", c.Region, "c3j2")
+	}
+	// Identity URL should have /v3 appended
+	if c.IdentityURL != "https://identity.c3j2.conoha.io/v3" {
+		t.Errorf("IdentityURL = %q", c.IdentityURL)
+	}
+	// Other URLs should use the inferred region
+	if c.ComputeURL != "https://compute.c3j2.conoha.io/v2.1" {
+		t.Errorf("ComputeURL = %q, want c3j2 region", c.ComputeURL)
+	}
+	if c.NetworkingURL != "https://networking.c3j2.conoha.io/v2.0" {
+		t.Errorf("NetworkingURL = %q, want c3j2 region", c.NetworkingURL)
+	}
+}
+
+func TestNewClient_WithIdentityURL_AlreadyHasVersionPath(t *testing.T) {
+	c := NewClient(WithIdentityURL("https://identity.c3j2.conoha.io/v3"))
+
+	if c.Region != "c3j2" {
+		t.Errorf("Region = %q, want %q", c.Region, "c3j2")
+	}
+	// Should not double-append /v3
+	if c.IdentityURL != "https://identity.c3j2.conoha.io/v3" {
+		t.Errorf("IdentityURL = %q", c.IdentityURL)
+	}
+}
+
+func TestNewClient_WithIdentityURL_ExplicitRegionTakesPriority(t *testing.T) {
+	c := NewClient(
+		WithIdentityURL("https://identity.c3j2.conoha.io"),
+		WithRegion("c3j1"),
+	)
+
+	// Explicit WithRegion should take priority over inference
+	if c.Region != "c3j1" {
+		t.Errorf("Region = %q, want %q (explicit)", c.Region, "c3j1")
+	}
+}
+
+func TestNewClient_WithIdentityURL_NonConoHaURL(t *testing.T) {
+	c := NewClient(WithIdentityURL("https://custom-identity.example.com"))
+
+	// Region should stay as default since URL is not ConoHa-style
+	if c.Region != DefaultRegion {
+		t.Errorf("Region = %q, want %q", c.Region, DefaultRegion)
+	}
+}
+
+// ============================================================
+// extractRegionFromConoHaURL
+// ============================================================
+
+func TestExtractRegionFromConoHaURL(t *testing.T) {
+	tests := []struct {
+		name string
+		url  string
+		want string
+	}{
+		{"standard", "https://identity.c3j1.conoha.io", "c3j1"},
+		{"with version path", "https://identity.c3j2.conoha.io/v3", "c3j2"},
+		{"compute service", "https://compute.c3j2.conoha.io/v2.1", "c3j2"},
+		{"non-conoha URL", "https://identity.example.com", ""},
+		{"no region part", "https://conoha.io", ""},
+		{"empty", "", ""},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := extractRegionFromConoHaURL(tt.url)
+			if got != tt.want {
+				t.Errorf("extractRegionFromConoHaURL(%q) = %q, want %q", tt.url, got, tt.want)
+			}
+		})
+	}
+}
+
+// ============================================================
+// normalizeExplicitURLs
+// ============================================================
+
+func TestNormalizeExplicitURLs_AppendsVersionPath(t *testing.T) {
+	c := NewClient(WithIdentityURL("https://identity.c3j2.conoha.io"))
+
+	if c.IdentityURL != "https://identity.c3j2.conoha.io/v3" {
+		t.Errorf("IdentityURL = %q, want version path appended", c.IdentityURL)
+	}
+}
+
+func TestNormalizeExplicitURLs_DoesNotDoubleAppend(t *testing.T) {
+	c := NewClient(WithIdentityURL("https://identity.c3j2.conoha.io/v3"))
+
+	if c.IdentityURL != "https://identity.c3j2.conoha.io/v3" {
+		t.Errorf("IdentityURL = %q, version path should not be doubled", c.IdentityURL)
+	}
+}
+
+func TestNormalizeExplicitURLs_StripsTrailingSlash(t *testing.T) {
+	c := NewClient(WithIdentityURL("https://identity.c3j2.conoha.io/"))
+
+	if c.IdentityURL != "https://identity.c3j2.conoha.io/v3" {
+		t.Errorf("IdentityURL = %q, trailing slash should be stripped", c.IdentityURL)
+	}
+}
+
+// ============================================================
 // fillURLsFromRegion
 // ============================================================
 
 func TestFillURLsFromRegion_DoesNotOverwriteExplicit(t *testing.T) {
 	c := NewClient(WithComputeURL("https://custom.example.com"))
 
-	// fillURLsFromRegion is called in NewClient; verify explicit URL was preserved
-	if c.ComputeURL != "https://custom.example.com" {
+	// fillURLsFromRegion is called in NewClient; verify explicit URL was preserved (with version path)
+	if c.ComputeURL != "https://custom.example.com/v2.1" {
 		t.Errorf("explicit ComputeURL was overwritten: %q", c.ComputeURL)
 	}
 }
@@ -179,7 +293,7 @@ func TestUpdateEndpointsFromCatalog_RespectsExplicit(t *testing.T) {
 
 	c.updateEndpointsFromCatalog(catalog)
 
-	if c.ComputeURL != "https://explicit.example.com" {
+	if c.ComputeURL != "https://explicit.example.com/v2.1" {
 		t.Errorf("explicit ComputeURL was overridden: %q", c.ComputeURL)
 	}
 }
@@ -666,14 +780,14 @@ func TestWithAllExplicitURLOptions(t *testing.T) {
 		key      string
 		expected string
 	}{
-		{"Identity", WithIdentityURL("https://id"), func(c *Client) string { return c.IdentityURL }, "identity", "https://id"},
-		{"Compute", WithComputeURL("https://comp"), func(c *Client) string { return c.ComputeURL }, "compute", "https://comp"},
-		{"BlockStorage", WithBlockStorageURL("https://bs"), func(c *Client) string { return c.BlockStorageURL }, "block-storage", "https://bs"},
-		{"ImageService", WithImageServiceURL("https://img"), func(c *Client) string { return c.ImageServiceURL }, "image", "https://img"},
-		{"Networking", WithNetworkingURL("https://net"), func(c *Client) string { return c.NetworkingURL }, "network", "https://net"},
-		{"LBaaS", WithLBaaSURL("https://lb"), func(c *Client) string { return c.LBaaSURL }, "load-balancer", "https://lb"},
-		{"ObjectStorage", WithObjectStorageURL("https://obj"), func(c *Client) string { return c.ObjectStorageURL }, "object-store", "https://obj"},
-		{"DNS", WithDNSServiceURL("https://dns"), func(c *Client) string { return c.DNSServiceURL }, "dns", "https://dns"},
+		{"Identity", WithIdentityURL("https://id"), func(c *Client) string { return c.IdentityURL }, "identity", "https://id/v3"},
+		{"Compute", WithComputeURL("https://comp"), func(c *Client) string { return c.ComputeURL }, "compute", "https://comp/v2.1"},
+		{"BlockStorage", WithBlockStorageURL("https://bs"), func(c *Client) string { return c.BlockStorageURL }, "block-storage", "https://bs/v3"},
+		{"ImageService", WithImageServiceURL("https://img"), func(c *Client) string { return c.ImageServiceURL }, "image", "https://img/v2"},
+		{"Networking", WithNetworkingURL("https://net"), func(c *Client) string { return c.NetworkingURL }, "network", "https://net/v2.0"},
+		{"LBaaS", WithLBaaSURL("https://lb"), func(c *Client) string { return c.LBaaSURL }, "load-balancer", "https://lb/v2.0"},
+		{"ObjectStorage", WithObjectStorageURL("https://obj"), func(c *Client) string { return c.ObjectStorageURL }, "object-store", "https://obj/v1"},
+		{"DNS", WithDNSServiceURL("https://dns"), func(c *Client) string { return c.DNSServiceURL }, "dns", "https://dns/v1"},
 	}
 
 	for _, tt := range tests {

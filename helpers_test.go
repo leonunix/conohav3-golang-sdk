@@ -11,18 +11,19 @@ import (
 
 // setupTestServer creates an httptest.Server and a Client with all endpoint URLs
 // pointing at the server. Token and TenantID are pre-set for convenience.
+// URLs are set directly (without With*URL options) so that version path
+// normalization is not applied — test handlers see raw resource paths.
 func setupTestServer(handler http.HandlerFunc) (*httptest.Server, *Client) {
 	server := httptest.NewServer(handler)
-	client := NewClient(
-		WithIdentityURL(server.URL),
-		WithComputeURL(server.URL),
-		WithBlockStorageURL(server.URL),
-		WithImageServiceURL(server.URL),
-		WithNetworkingURL(server.URL),
-		WithLBaaSURL(server.URL),
-		WithObjectStorageURL(server.URL),
-		WithDNSServiceURL(server.URL),
-	)
+	client := NewClient()
+	client.IdentityURL = server.URL
+	client.ComputeURL = server.URL
+	client.BlockStorageURL = server.URL
+	client.ImageServiceURL = server.URL
+	client.NetworkingURL = server.URL
+	client.LBaaSURL = server.URL
+	client.ObjectStorageURL = server.URL
+	client.DNSServiceURL = server.URL
 	client.Token = "test-token"
 	client.TenantID = "test-tenant-id"
 	return server, client
