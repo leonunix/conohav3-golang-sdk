@@ -273,7 +273,7 @@ func TestEnableAutoBackup_Success(t *testing.T) {
 	})
 	defer server.Close()
 
-	backup, err := client.EnableAutoBackup(context.Background(), "srv-123")
+	backup, err := client.EnableAutoBackup(context.Background(), "srv-123", nil)
 	assertNoError(t, err)
 
 	if _, ok := body["backup"]; !ok {
@@ -282,6 +282,126 @@ func TestEnableAutoBackup_Success(t *testing.T) {
 	if backup.ID != "bk-new" {
 		t.Errorf("ID = %q", backup.ID)
 	}
+}
+
+func TestEnableAutoBackup_DefaultNoExtraParams(t *testing.T) {
+	var rawBody map[string]map[string]interface{}
+	server, client := setupTestServer(func(w http.ResponseWriter, r *http.Request) {
+		readJSONBody(t, r, &rawBody)
+		w.WriteHeader(201)
+		w.Write([]byte(`{"backup":{"id":"bk-1","status":"creating"}}`))
+	})
+	defer server.Close()
+
+	_, err := client.EnableAutoBackup(context.Background(), "srv-123", nil)
+	assertNoError(t, err)
+
+	backupBody := rawBody["backup"]
+	if backupBody["instance_uuid"] != "srv-123" {
+		t.Errorf("instance_uuid = %v", backupBody["instance_uuid"])
+	}
+	if _, ok := backupBody["schedule"]; ok {
+		t.Error("nil opts should not include schedule")
+	}
+	if _, ok := backupBody["retention"]; ok {
+		t.Error("nil opts should not include retention")
+	}
+}
+
+func TestEnableAutoBackup_WithDailySchedule(t *testing.T) {
+	var rawBody map[string]map[string]interface{}
+	server, client := setupTestServer(func(w http.ResponseWriter, r *http.Request) {
+		readJSONBody(t, r, &rawBody)
+		w.WriteHeader(201)
+		w.Write([]byte(`{"backup":{"id":"bk-daily","status":"creating"}}`))
+	})
+	defer server.Close()
+
+	backup, err := client.EnableAutoBackup(context.Background(), "srv-123", &EnableAutoBackupOptions{
+		Schedule:  "daily",
+		Retention: 14,
+	})
+	assertNoError(t, err)
+
+	backupBody := rawBody["backup"]
+	if backupBody["schedule"] != "daily" {
+		t.Errorf("schedule = %v", backupBody["schedule"])
+	}
+	if int(backupBody["retention"].(float64)) != 14 {
+		t.Errorf("retention = %v", backupBody["retention"])
+	}
+	if backup.ID != "bk-daily" {
+		t.Errorf("ID = %q", backup.ID)
+	}
+}
+
+func TestEnableAutoBackup_ScheduleOnly(t *testing.T) {
+	var rawBody map[string]map[string]interface{}
+	server, client := setupTestServer(func(w http.ResponseWriter, r *http.Request) {
+		readJSONBody(t, r, &rawBody)
+		w.WriteHeader(201)
+		w.Write([]byte(`{"backup":{"id":"bk-2","status":"creating"}}`))
+	})
+	defer server.Close()
+
+	_, err := client.EnableAutoBackup(context.Background(), "srv-123", &EnableAutoBackupOptions{
+		Schedule: "daily",
+	})
+	assertNoError(t, err)
+
+	backupBody := rawBody["backup"]
+	if backupBody["schedule"] != "daily" {
+		t.Errorf("schedule = %v", backupBody["schedule"])
+	}
+	if _, ok := backupBody["retention"]; ok {
+		t.Error("zero retention should not be included")
+	}
+}
+
+// ============================================================
+// UpdateBackupRetention
+// ============================================================
+
+func TestUpdateBackupRetention_Success(t *testing.T) {
+	var capturedMethod string
+	var capturedPath string
+	var rawBody map[string]map[string]interface{}
+	server, client := setupTestServer(func(w http.ResponseWriter, r *http.Request) {
+		capturedMethod = r.Method
+		capturedPath = r.URL.Path
+		readJSONBody(t, r, &rawBody)
+		w.WriteHeader(200)
+		w.Write([]byte(`{"backup":{"id":"bk-1","status":"available"}}`))
+	})
+	defer server.Close()
+
+	backup, err := client.UpdateBackupRetention(context.Background(), "srv-123", 30)
+	assertNoError(t, err)
+
+	if capturedMethod != http.MethodPut {
+		t.Errorf("Method = %q, want PUT", capturedMethod)
+	}
+	if !strings.Contains(capturedPath, "/test-tenant-id/backups/srv-123") {
+		t.Errorf("Path = %q", capturedPath)
+	}
+	backupBody := rawBody["backup"]
+	if int(backupBody["retention"].(float64)) != 30 {
+		t.Errorf("retention = %v", backupBody["retention"])
+	}
+	if backup.ID != "bk-1" {
+		t.Errorf("ID = %q", backup.ID)
+	}
+}
+
+func TestUpdateBackupRetention_NotFound(t *testing.T) {
+	server, client := setupTestServer(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(404)
+		w.Write([]byte(`{"error":{"message":"Daily backup not found"}}`))
+	})
+	defer server.Close()
+
+	_, err := client.UpdateBackupRetention(context.Background(), "srv-123", 14)
+	assertAPIError(t, err, 404)
 }
 
 func TestRestoreBackup_Success(t *testing.T) {

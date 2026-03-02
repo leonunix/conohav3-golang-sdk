@@ -44,7 +44,7 @@ type VolumeType struct {
 type CreateVolumeRequest struct {
 	Size       int    `json:"size"`
 	Name       string `json:"name"`
-	VolumeType string `json:"volume_type"`
+	VolumeType string `json:"volume_type,omitempty"`
 	Description *string `json:"description,omitempty"`
 	ImageRef   string `json:"imageRef,omitempty"`
 	SourceVolID string `json:"source_volid,omitempty"`
@@ -378,13 +378,45 @@ func (c *Client) GetBackup(ctx context.Context, backupID string) (*Backup, error
 	return &result.Backup, nil
 }
 
+// EnableAutoBackupOptions are optional parameters for EnableAutoBackup.
+type EnableAutoBackupOptions struct {
+	Schedule  string // "daily" or "weekly" (default: weekly if empty)
+	Retention int    // Retention period in days (14-30). Only effective for daily backups.
+}
+
 // EnableAutoBackup enables auto-backup for a server.
-func (c *Client) EnableAutoBackup(ctx context.Context, serverID string) (*Backup, error) {
+// Pass nil for opts to use default weekly backup without retention settings.
+func (c *Client) EnableAutoBackup(ctx context.Context, serverID string, opts *EnableAutoBackupOptions) (*Backup, error) {
 	url := fmt.Sprintf("%s/%s/backups", c.BlockStorageURL, c.tenantID())
-	body := map[string]interface{}{
-		"backup": map[string]string{"instance_uuid": serverID},
+	backupBody := map[string]interface{}{"instance_uuid": serverID}
+	if opts != nil {
+		if opts.Schedule != "" {
+			backupBody["schedule"] = opts.Schedule
+		}
+		if opts.Retention > 0 {
+			backupBody["retention"] = opts.Retention
+		}
 	}
+	body := map[string]interface{}{"backup": backupBody}
 	req, err := c.newRequest(ctx, http.MethodPost, url, body)
+	if err != nil {
+		return nil, err
+	}
+	var result backupResponse
+	if _, err := c.do(req, &result); err != nil {
+		return nil, err
+	}
+	return &result.Backup, nil
+}
+
+// UpdateBackupRetention updates the retention period for a daily backup.
+// Requires an active daily backup subscription.
+func (c *Client) UpdateBackupRetention(ctx context.Context, serverID string, retention int) (*Backup, error) {
+	url := fmt.Sprintf("%s/%s/backups/%s", c.BlockStorageURL, c.tenantID(), serverID)
+	body := map[string]interface{}{
+		"backup": map[string]interface{}{"retention": retention},
+	}
+	req, err := c.newRequest(ctx, http.MethodPut, url, body)
 	if err != nil {
 		return nil, err
 	}

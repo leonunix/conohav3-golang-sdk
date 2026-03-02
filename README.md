@@ -158,8 +158,19 @@ vol, err := client.CreateVolume(ctx, conoha.CreateVolumeRequest{
 attachment, err := client.AttachVolume(ctx, serverID, volumeID)
 err = client.DetachVolume(ctx, serverID, volumeID)
 
-// Auto-backup
-backup, err := client.EnableAutoBackup(ctx, serverID)
+// Auto-backup (weekly, default)
+backup, err := client.EnableAutoBackup(ctx, serverID, nil)
+
+// Auto-backup (daily with 14-day retention)
+backup, err = client.EnableAutoBackup(ctx, serverID, &conoha.EnableAutoBackupOptions{
+	Schedule:  "daily",
+	Retention: 14,
+})
+
+// Update daily backup retention to 30 days
+backup, err = client.UpdateBackupRetention(ctx, serverID, 30)
+
+// Disable auto-backup (cancels both weekly and daily)
 err = client.DisableAutoBackup(ctx, serverID)
 ```
 
