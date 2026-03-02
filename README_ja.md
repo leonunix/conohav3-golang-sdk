@@ -157,8 +157,19 @@ vol, err := client.CreateVolume(ctx, conoha.CreateVolumeRequest{
 attachment, err := client.AttachVolume(ctx, serverID, volumeID)
 err = client.DetachVolume(ctx, serverID, volumeID)
 
-// 自動バックアップ
-backup, err := client.EnableAutoBackup(ctx, serverID)
+// 自動バックアップ（週次、デフォルト）
+backup, err := client.EnableAutoBackup(ctx, serverID, nil)
+
+// 自動バックアップ（日次、14日間保持）
+backup, err = client.EnableAutoBackup(ctx, serverID, &conoha.EnableAutoBackupOptions{
+	Schedule:  "daily",
+	Retention: 14,
+})
+
+// 日次バックアップの保持期間を30日に変更
+backup, err = client.UpdateBackupRetention(ctx, serverID, 30)
+
+// 自動バックアップ無効化（週次・日次の両方を解除）
 err = client.DisableAutoBackup(ctx, serverID)
 ```
 
